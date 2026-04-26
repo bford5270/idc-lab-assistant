@@ -1,0 +1,1240 @@
+{
+  "version": "1.0.0",
+  "metadata": {
+    "purpose": "Lab-value interpretation reference for IDCs (Independent Duty Corpsmen).",
+    "scope": "Adult ambulatory labs commonly encountered in IDC sick call. Lab interpretation only — no operational/duty-status content.",
+    "severity_ladder": ["Normal", "Mild Low", "Mild High", "Moderate Low", "Moderate High", "Severe Low", "Severe High", "Critical Low", "Critical High"],
+    "interval_convention": "[min, max) — inclusive low, exclusive high. Adjacent ranges share boundaries cleanly.",
+    "unknown_context_policy": "When sex/age not provided for a context-stratified lab, falls back to 'default' band set with conservative boundaries; output flags the assumption.",
+    "ehr_template_slots": ["{value}", "{unit}", "{sex}", "{age}", "{baseline}", "{delta}", "{date}"],
+    "bracket_placeholders": "Square-bracket placeholders like [findings], [med list] are NOT substituted — they are intentional fill-ins for the IDC.",
+    "disclaimer": "Clinical decision support. Not a substitute for clinical judgment. Use de-identified test data only."
+  },
+  "labs": {
+    "potassium": {
+      "display_name": "Potassium",
+      "loinc": "2823-3",
+      "synonyms": ["potassium", "k+", "k"],
+      "unit": "mEq/L",
+      "kind": "numeric",
+      "trendable": true,
+      "thresholds": [
+        { "severity": "Critical Low",  "max": 2.5 },
+        { "severity": "Severe Low",    "min": 2.5, "max": 3.0 },
+        { "severity": "Mild Low",      "min": 3.0, "max": 3.5 },
+        { "severity": "Normal",        "min": 3.5, "max": 5.0 },
+        { "severity": "Mild High",     "min": 5.0, "max": 5.6 },
+        { "severity": "Moderate High", "min": 5.6, "max": 6.0 },
+        { "severity": "Severe High",   "min": 6.0, "max": 7.0 },
+        { "severity": "Critical High", "min": 7.0 }
+      ],
+      "follow_up": {
+        "Critical Low": {
+          "category": "Critical hypokalemia (<2.5 mEq/L) — high arrhythmia risk",
+          "next_tests": [
+            "Repeat K stat to confirm.",
+            "12-lead ECG (U waves, ST depression, T-wave flattening, ventricular ectopy).",
+            "Magnesium — refractory hypokalemia is often hypomagnesemic.",
+            "BMP, ionized calcium."
+          ],
+          "ehr_plan": "K = {value} mEq/L (Critical Low). Stat 12-lead ECG obtained — [findings]. Patient instructed to proceed immediately to the nearest emergency department for IV potassium replacement and continuous cardiac monitoring. Held: [diuretics, laxatives, beta-agonists, insulin]. Mg level pending.",
+          "patient_communication": "Your blood test shows a critically low potassium level. This can cause dangerous heart rhythm problems. Please go to the nearest emergency department right now. Do not drive yourself — have someone drive you, or call 911 if you are alone or feel unwell. Bring this notification with you to the ED."
+        },
+        "Severe Low": {
+          "category": "Severe hypokalemia (2.5–2.9 mEq/L)",
+          "next_tests": ["Repeat K to confirm.", "12-lead ECG.", "Magnesium.", "BMP."],
+          "ehr_plan": "K = {value} mEq/L (Severe Low). ECG obtained — [findings]. Plan: oral KCl 40–80 mEq with close follow-up (or IV repletion if symptomatic / unable to tolerate PO); check Mg and replete if low; review meds (diuretics, laxatives, GI losses). Recheck K within 24–48 h. Patient counseled to return for chest pain, palpitations, severe weakness, or worsening symptoms.",
+          "patient_communication": "Your blood test shows a low potassium level. We need to replace it with a potassium supplement. Please come to the clinic today to start treatment, and we will recheck the level in 1–2 days. Call us right away or go to the emergency department if you have chest pain, a fast or irregular heartbeat, or severe muscle weakness."
+        },
+        "Mild Low": {
+          "category": "Mild hypokalemia (3.0–3.4 mEq/L)",
+          "next_tests": ["Repeat K to confirm.", "Magnesium.", "Review medication list."],
+          "ehr_plan": "K = {value} mEq/L (Mild Low). Plan: dietary repletion (banana, orange juice, potatoes, leafy greens); review diuretic use, GI losses; check Mg if not done; recheck K in 1–2 weeks.",
+          "patient_communication": "Your blood test shows a slightly low potassium level. Eat potassium-rich foods (bananas, oranges, potatoes, leafy greens). We will recheck the level in 1–2 weeks. Call the clinic if you have weakness, cramping, or palpitations."
+        },
+        "Mild High": {
+          "category": "Mild hyperkalemia (5.0–5.5 mEq/L)",
+          "next_tests": ["Repeat K to rule out hemolyzed sample.", "Review medications (ACEi/ARB, K-sparing, NSAIDs, K supplements).", "BMP, Mg."],
+          "ehr_plan": "K = {value} mEq/L (Mild High). Likely contributors: [hemolysis, ACEi/ARB, K-sparing diuretics, NSAIDs, K supplements, dietary]. Plan: repeat K (non-hemolyzed); medication review; recheck within 1–2 weeks.",
+          "patient_communication": "Your potassium level is slightly above normal. This can sometimes happen because of medications, diet, or how the blood was drawn. We will recheck the level. Continue your usual medications unless we tell you otherwise."
+        },
+        "Moderate High": {
+          "category": "Moderate hyperkalemia (5.6–5.9 mEq/L)",
+          "next_tests": ["Repeat K stat (rule out hemolyzed sample).", "12-lead ECG.", "BMP, Mg, ionized Ca."],
+          "ehr_plan": "K = {value} mEq/L (Moderate High). Stat 12-lead ECG obtained — [findings]. Plan: hold K-elevating medications (ACEi/ARB, spironolactone, NSAIDs, K-sparing diuretics, K supplements); repeat K within hours; if confirmed and ECG abnormal or symptoms present — refer to ED.",
+          "patient_communication": "Your potassium level is moderately high. Please come to the clinic today for an EKG and a repeat blood test. Hold any potassium supplements until told otherwise. Go to the emergency department if you have chest pain, palpitations, or muscle weakness."
+        },
+        "Severe High": {
+          "category": "Severe hyperkalemia (6.0–6.9 mEq/L) — admission warranted",
+          "next_tests": ["Stat repeat K (do not delay treatment).", "12-lead ECG immediately.", "BMP, Mg, ionized Ca, VBG."],
+          "ehr_plan": "K = {value} mEq/L (Severe High). Stat 12-lead ECG obtained — [findings]. All K-elevating medications held. Patient instructed to proceed immediately to the nearest emergency department for IV calcium, insulin/dextrose, and definitive management with monitored admission.",
+          "patient_communication": "Your blood test shows a dangerously high potassium level. This can affect your heart rhythm. Please go to the nearest emergency department right now. Do not drive yourself — have someone drive you, or call 911 if you are alone or feel unwell. Bring this notification with you to the ED."
+        },
+        "Critical High": {
+          "category": "Critical hyperkalemia (≥7.0 mEq/L) — life-threatening",
+          "next_tests": ["12-lead ECG immediately (peaked T, widened QRS, sine wave).", "Stat repeat K.", "BMP, Mg, ionized Ca, VBG."],
+          "ehr_plan": "K = {value} mEq/L (Critical High). Stat 12-lead ECG obtained — [findings: peaked T, QRS widening, sine wave]. Emergent treatment initiated as indicated: IV calcium gluconate for membrane stabilization, insulin/dextrose, beta-agonist nebulizer; consider sodium bicarbonate if acidotic; arrange dialysis as appropriate. All K-elevating medications held. Activated EMS / direct ED transport.",
+          "patient_communication": "Your potassium level is at a life-threatening level. We are arranging emergency transport. If you are reading this on your own, call 911 immediately or go to the nearest emergency department. Do not eat or drink. Do not drive yourself."
+        }
+      },
+      "sources": ["Rafique 2021 (JACEP Open hyperkalemia consensus)", "AAFP"]
+    },
+
+    "sodium": {
+      "display_name": "Sodium",
+      "loinc": "2951-2",
+      "synonyms": ["sodium", "na+", "na"],
+      "unit": "mEq/L",
+      "kind": "numeric",
+      "trendable": true,
+      "thresholds": [
+        { "severity": "Critical Low",  "max": 120 },
+        { "severity": "Severe Low",    "min": 120, "max": 125 },
+        { "severity": "Moderate Low",  "min": 125, "max": 130 },
+        { "severity": "Mild Low",      "min": 130, "max": 135 },
+        { "severity": "Normal",        "min": 135, "max": 145 },
+        { "severity": "Mild High",     "min": 145, "max": 150 },
+        { "severity": "Moderate High", "min": 150, "max": 160 },
+        { "severity": "Severe High",   "min": 160 }
+      ],
+      "follow_up": {
+        "Critical Low": {
+          "category": "Critical hyponatremia (<120 mEq/L) — risk of seizure / coma",
+          "next_tests": ["Repeat Na stat.", "Serum and urine osmolality, urine sodium.", "TSH, cortisol if etiology unclear.", "Volume status assessment."],
+          "ehr_plan": "Na = {value} mEq/L (Critical Low). Mental status: [alert/confused/obtunded]. Patient instructed to proceed immediately to the nearest emergency department for hypertonic saline (3% NaCl), monitored sodium correction (target 4–6 mEq/L rise in first 4 h, ≤10–12 mEq/L in 24 h to avoid osmotic demyelination), and workup of underlying cause.",
+          "patient_communication": "Your blood test shows a critically low sodium level. This can cause seizures or coma. Please go to the nearest emergency department right now. Do not drive yourself — have someone drive you, or call 911 if you are alone, confused, or feel unwell."
+        },
+        "Severe Low": {
+          "category": "Severe hyponatremia (120–124 mEq/L)",
+          "next_tests": ["Repeat Na.", "Serum and urine osmolality, urine sodium.", "TSH, AM cortisol.", "Volume status assessment."],
+          "ehr_plan": "Na = {value} mEq/L (Severe Low). Symptoms: [headache, nausea, confusion, gait]. If symptomatic or acute drop — refer to ED for monitored correction. If asymptomatic and chronic, evaluate volume status (hypo/eu/hypervolemic) and treat underlying cause; correction rate 6–12 mEq/L in 24 h, ≤18 in 48 h.",
+          "patient_communication": "Your blood test shows a low sodium level that needs prompt evaluation. Please come to the clinic today, or go to the emergency department if you have a headache, nausea, confusion, weakness, or trouble walking."
+        },
+        "Moderate Low": {
+          "category": "Moderate hyponatremia (125–129 mEq/L)",
+          "next_tests": ["Repeat Na.", "Serum/urine osmolality, urine Na.", "Volume status, medication review (thiazides, SSRIs)."],
+          "ehr_plan": "Na = {value} mEq/L (Moderate Low). Asymptomatic. Plan: workup for cause (volume status, urine studies, TSH/cortisol if indicated); medication review; fluid restriction if SIADH suspected; recheck within days.",
+          "patient_communication": "Your blood test shows a moderately low sodium level. We will look into possible causes and may adjust your medications or fluid intake. Please come to the clinic for follow-up. Call us or go to the ED if you develop confusion, severe headache, or seizures."
+        },
+        "Mild Low": {
+          "category": "Mild hyponatremia (130–134 mEq/L)",
+          "next_tests": ["Repeat Na.", "Review medications (thiazides, SSRIs, NSAIDs).", "Volume status."],
+          "ehr_plan": "Na = {value} mEq/L (Mild Low). Asymptomatic. Plan: medication review, hydration counseling, recheck in 1–2 weeks.",
+          "patient_communication": "Your sodium level is slightly low. This is often related to medications or fluid intake. We will recheck it. Continue your usual diet and medications unless we tell you otherwise."
+        },
+        "Mild High": {
+          "category": "Mild hypernatremia (145–149 mEq/L)",
+          "next_tests": ["Repeat Na.", "Volume status, free water intake.", "Glucose (rule out hyperosmolar)."],
+          "ehr_plan": "Na = {value} mEq/L (Mild High). Plan: assess hydration, encourage free water intake, review meds (diuretics); recheck in 1–2 weeks.",
+          "patient_communication": "Your sodium level is slightly high — usually a sign of mild dehydration. Drink water throughout the day. We will recheck the level."
+        },
+        "Moderate High": {
+          "category": "Moderate hypernatremia (150–159 mEq/L)",
+          "next_tests": ["Repeat Na.", "Glucose, BUN/Cr.", "Urine osmolality (DI workup if persistent)."],
+          "ehr_plan": "Na = {value} mEq/L (Moderate High). Plan: aggressive oral or IV free water replacement; identify cause (insufficient intake, GI losses, DI); correct gradually (≤10–12 mEq/L per 24 h); recheck within 24 h.",
+          "patient_communication": "Your sodium level is moderately high, suggesting significant dehydration. Please come to the clinic today for evaluation and fluids. Go to the emergency department if you feel confused, very weak, or unable to drink fluids."
+        },
+        "Severe High": {
+          "category": "Severe hypernatremia (≥160 mEq/L)",
+          "next_tests": ["Stat repeat Na.", "Glucose, BUN/Cr, osmolality.", "Mental status assessment."],
+          "ehr_plan": "Na = {value} mEq/L (Severe High). Patient instructed to proceed immediately to the nearest emergency department for IV free water replacement and monitored correction (≤10–12 mEq/L per 24 h to avoid cerebral edema), workup for diabetes insipidus or other cause.",
+          "patient_communication": "Your blood test shows a dangerously high sodium level. Please go to the nearest emergency department right now. Do not drive yourself — have someone drive you, or call 911 if you are alone or feel unwell."
+        }
+      },
+      "sources": ["AAFP 2015 sodium disorders", "ED hyponatremia review (Tand 2024)"]
+    },
+
+    "glucose": {
+      "display_name": "Glucose",
+      "loinc": "2345-7",
+      "synonyms": ["glucose", "glu", "blood glucose", "bg", "fbg"],
+      "unit": "mg/dL",
+      "kind": "numeric",
+      "trendable": true,
+      "thresholds": [
+        { "severity": "Critical Low",  "max": 54 },
+        { "severity": "Severe Low",    "min": 54, "max": 70 },
+        { "severity": "Normal",        "min": 70, "max": 100 },
+        { "severity": "Mild High",     "min": 100, "max": 126 },
+        { "severity": "Moderate High", "min": 126, "max": 200 },
+        { "severity": "Severe High",   "min": 200, "max": 300 },
+        { "severity": "Critical High", "min": 300 }
+      ],
+      "follow_up": {
+        "Critical Low": {
+          "category": "Severe hypoglycemia (<54 mg/dL) — ADA Level 2/3",
+          "next_tests": ["Fingerstick glucose to confirm.", "BMP, repeat glucose after treatment.", "If recurrent or unexplained: insulin/C-peptide, sulfonylurea screen, AM cortisol."],
+          "ehr_plan": "Glucose = {value} mg/dL (Critical Low). Mental status: [alert/altered/unresponsive]. Treatment: 15 g rapid carbohydrate PO if able, or IV D50 / IM glucagon if unable. Recheck glucose 15 min. If recurrent, no clear cause, or no prior history — refer to ED for evaluation and monitored observation.",
+          "patient_communication": "Your blood sugar is dangerously low. If you can swallow safely, eat or drink something with quick sugar (juice, regular soda, glucose tablets) immediately. If you are confused, very weak, or unable to swallow safely, you or someone with you should call 911 or go to the emergency department now. Bring this notification."
+        },
+        "Severe Low": {
+          "category": "Hypoglycemia (54–69 mg/dL) — ADA Level 1 alert",
+          "next_tests": ["Repeat glucose after treatment.", "Review diabetes meds (sulfonylureas, insulin) and dosing.", "Consider A1C trend."],
+          "ehr_plan": "Glucose = {value} mg/dL (Severe Low / ADA Level 1). Patient instructed in 15-15 rule (15 g carb, recheck in 15 min). Review and adjust diabetes regimen as indicated. Counsel on hypoglycemia awareness and glucagon prescription if recurrent.",
+          "patient_communication": "Your blood sugar is low. Eat or drink 15 grams of fast-acting sugar (4 oz juice, 3 glucose tablets, or 1 tbsp honey), then recheck your sugar in 15 minutes. We will review your diabetes medications. Call us if this happens again, or go to the emergency department if you cannot keep sugar up or feel confused."
+        },
+        "Mild High": {
+          "category": "Impaired fasting glucose / prediabetes (100–125 mg/dL fasting)",
+          "next_tests": ["Confirm fasting status.", "A1C.", "Lipid panel.", "Repeat fasting glucose if not confirmed."],
+          "ehr_plan": "Glucose = {value} mg/dL (Mild High; prediabetes range if fasting). Plan: confirm fasting status; check A1C; lifestyle counseling (diet, weight, ≥150 min/week activity); recheck glucose and A1C in 3–6 months. Consider metformin for high-risk patients per ADA.",
+          "patient_communication": "Your blood sugar is slightly high. This can mean prediabetes. Lifestyle changes (healthy eating, regular activity, weight management) are very effective. We will check a hemoglobin A1C and recheck your sugar in a few months."
+        },
+        "Moderate High": {
+          "category": "Hyperglycemia in diabetes range (126–199 mg/dL)",
+          "next_tests": ["A1C.", "Confirm fasting status.", "Repeat glucose; consider OGTT.", "Lipid panel, urine albumin/Cr ratio if new diabetes."],
+          "ehr_plan": "Glucose = {value} mg/dL (Moderate High; diabetes range if fasting ≥126). Plan: A1C; confirm with second test; if new diagnosis — initiate diabetes education, lifestyle counseling, and pharmacotherapy per ADA Standards of Care; baseline labs (lipids, microalbumin, eye/foot exam referrals).",
+          "patient_communication": "Your blood sugar is in the diabetes range. We will check a hemoglobin A1C to see your average sugar over the past few months and confirm the diagnosis. If confirmed, we will start a treatment plan together. Watch for symptoms like increased thirst, urination, blurred vision, or unexplained weight loss — call us if these worsen."
+        },
+        "Severe High": {
+          "category": "Severe hyperglycemia (200–299 mg/dL)",
+          "next_tests": ["A1C.", "BMP (anion gap).", "Urine ketones, urinalysis.", "Beta-hydroxybutyrate if any DKA concern."],
+          "ehr_plan": "Glucose = {value} mg/dL (Severe High). Plan: check ketones (urine or serum BHB); BMP for anion gap; if symptoms (polyuria, polydipsia, nausea, abdominal pain, Kussmaul respirations) or ketonemia — refer to ED. Otherwise: hydration, A1C, intensify diabetes regimen, close follow-up.",
+          "patient_communication": "Your blood sugar is significantly elevated. Drink water (not sugary drinks). Please come to the clinic today for further testing. Go to the emergency department right away if you feel nauseated, are vomiting, have abdominal pain, or have rapid breathing — these can be signs of a serious complication."
+        },
+        "Critical High": {
+          "category": "Critical hyperglycemia (≥300 mg/dL) — DKA / HHS concern",
+          "next_tests": ["BMP, anion gap.", "VBG/ABG (pH, bicarbonate).", "Urine and serum ketones / beta-hydroxybutyrate.", "UA, lactate, infection workup if febrile."],
+          "ehr_plan": "Glucose = {value} mg/dL (Critical High). Concerns: DKA / HHS. Patient instructed to proceed immediately to the nearest emergency department for IV fluids, insulin therapy, electrolyte correction, and DKA/HHS workup. Note: euglycemic DKA can occur at glucose <200 mg/dL on SGLT2 inhibitors — assess for acidosis even if glucose lower.",
+          "patient_communication": "Your blood sugar is at a level that can be dangerous, especially if you have signs of a diabetic emergency (nausea, vomiting, belly pain, fast deep breathing, fruity breath, confusion). Please go to the nearest emergency department right now. Do not drive yourself — have someone drive you or call 911."
+        }
+      },
+      "sources": ["ADA Standards of Care 2025/2026", "AAFP"]
+    },
+
+    "creatinine": {
+      "display_name": "Creatinine",
+      "loinc": "2160-0",
+      "synonyms": ["creatinine", "cr", "creat"],
+      "unit": "mg/dL",
+      "kind": "numeric",
+      "trendable": true,
+      "trend_note": "When a baseline creatinine is available, prefer KDIGO AKI staging — Stage 1: +0.3 mg/dL within 48 h or 1.5–1.9× baseline within 7 d; Stage 2: 2.0–2.9× baseline; Stage 3: ≥3× baseline, ≥4.0 mg/dL, or RRT initiation. Phase 1 uses the static thresholds below; trend computation is added in Phase 4 timeline UI. When no baseline is known, use the `differentiation` block for AKI vs CKD vs AKI-on-CKD reasoning.",
+      "differentiation": {
+        "purpose": "Help the IDC distinguish AKI vs CKD vs AKI-on-CKD when baseline is unknown. Severity tiers (Mild/Moderate/Severe/Critical) below already drive urgency of action; this block guides which workup to pursue.",
+        "render_as": "Interactive checklist in UI — engine should render reasoning_prompts as a questionnaire and surface acute_pattern_features / chronic_pattern_features as a side-by-side comparison.",
+        "reasoning_prompts": [
+          "When was the patient last known to have a normal or baseline creatinine? (Hours–days suggests acute; months–years suggests chronic.)",
+          "Recent acute illness — vomiting, diarrhea, sepsis, hemorrhage, dehydration?",
+          "Recent nephrotoxin exposure — NSAIDs, new or up-titrated ACEi/ARB, IV contrast, aminoglycoside, vancomycin, PPI?",
+          "Obstructive symptoms — anuria, severe flank pain, BPH symptoms, palpable bladder, urinary retention?",
+          "Acute symptoms — decreased urine output, edema, dyspnea, nausea, confusion, asterixis?",
+          "CKD risk factors — hypertension, diabetes, family history of kidney disease, prior abnormal creatinine?",
+          "Chronic findings — anemia, hyperphosphatemia, secondary hyperparathyroidism, small kidneys on prior imaging?"
+        ],
+        "acute_pattern_features": [
+          "Hours-to-days timeline",
+          "Recent volume loss, sepsis, or hemorrhage",
+          "Recent nephrotoxin exposure",
+          "New oliguria, edema, dyspnea",
+          "New hematuria or proteinuria",
+          "Obstructive symptoms"
+        ],
+        "chronic_pattern_features": [
+          "Months-to-years timeline",
+          "Established HTN, DM, family history of kidney disease",
+          "Anemia, hyperphosphatemia, secondary hyperPTH (chronic uremic milieu)",
+          "Small or echogenic kidneys on prior imaging",
+          "Stable elevated creatinine on prior labs"
+        ],
+        "mixed_pattern_note": "AKI-on-CKD = established CKD risk factors PLUS a recent acute trigger. Manage the acute phase as AKI; re-establish CKD baseline after stabilization.",
+        "workup_implications": {
+          "acute_pattern": "AKI workup — volume status, urinalysis with microscopy, urine sodium / FENa if pre-renal vs intrinsic uncertain, renal ultrasound if obstruction possible, medication review.",
+          "chronic_pattern": "CKD staging — eGFR (CKD-EPI 2021), urine albumin/Cr ratio, BMP including K and HCO3, CBC (anemia), Ca/P/PTH (mineral bone disease), 25-OH D, lipid panel.",
+          "mixed_pattern": "Both — address AKI urgency first; re-establish CKD baseline once acute issue resolves."
+        }
+      },
+      "thresholds_by_context": {
+        "default": [
+          { "severity": "Normal",        "min": 0.6, "max": 1.3 },
+          { "severity": "Mild High",     "min": 1.3, "max": 1.8 },
+          { "severity": "Moderate High", "min": 1.8, "max": 3.0 },
+          { "severity": "Severe High",   "min": 3.0, "max": 4.0 },
+          { "severity": "Critical High", "min": 4.0 }
+        ],
+        "female": [
+          { "severity": "Normal",        "min": 0.5, "max": 1.1 },
+          { "severity": "Mild High",     "min": 1.1, "max": 1.6 },
+          { "severity": "Moderate High", "min": 1.6, "max": 3.0 },
+          { "severity": "Severe High",   "min": 3.0, "max": 4.0 },
+          { "severity": "Critical High", "min": 4.0 }
+        ],
+        "male": [
+          { "severity": "Normal",        "min": 0.7, "max": 1.3 },
+          { "severity": "Mild High",     "min": 1.3, "max": 2.0 },
+          { "severity": "Moderate High", "min": 2.0, "max": 3.0 },
+          { "severity": "Severe High",   "min": 3.0, "max": 4.0 },
+          { "severity": "Critical High", "min": 4.0 }
+        ]
+      },
+      "follow_up": {
+        "Mild High": {
+          "category": "Mildly elevated creatinine — compare to baseline",
+          "next_tests": ["BMP/CMP, eGFR.", "Urinalysis with microscopy.", "Urine albumin/creatinine ratio.", "Review baseline creatinine if available.", "Medication review (NSAIDs, ACEi/ARB, contrast, nephrotoxins)."],
+          "ehr_plan": "Cr = {value} mg/dL (Mild High). eGFR pending/calculated. Compare to baseline: [baseline value, date]. If new elevation — assess hydration, hold nephrotoxic meds, UA, urine ACR; recheck in 1–2 weeks. If chronic — establish CKD staging and risk stratification; lifestyle and BP/glycemic optimization.",
+          "patient_communication": "Your kidney function test is slightly elevated. We will compare it to past results, check a urine sample, and may adjust medications that can affect the kidneys. Drink adequate water and avoid NSAIDs (ibuprofen, naproxen) until told otherwise."
+        },
+        "Moderate High": {
+          "category": "Moderately elevated creatinine — concerning for AKI or CKD progression",
+          "next_tests": ["BMP/CMP with eGFR.", "Urinalysis with microscopy.", "Urine albumin/Cr ratio.", "Renal ultrasound if obstruction suspected.", "Review baseline creatinine."],
+          "ehr_plan": "Cr = {value} mg/dL (Moderate High). eGFR [computed]. Compare to baseline: [baseline value, date]. Plan: hold nephrotoxic meds (NSAIDs, ACEi/ARB, contrast pending eval); UA, urine ACR; CMP including K (rule out hyperkalemia); recheck within days. If acute rise meets KDIGO AKI criteria — referral to nephrology and consider hospital admission.",
+          "patient_communication": "Your kidney function test is moderately elevated. Please come to the clinic this week for further evaluation and a repeat blood test. Stop NSAIDs (ibuprofen, naproxen) until we tell you otherwise. Drink water normally. Call us or go to the emergency department if you have decreased urination, swelling, shortness of breath, or confusion."
+        },
+        "Severe High": {
+          "category": "Severely elevated creatinine — likely AKI or advanced CKD",
+          "next_tests": ["Stat BMP with K.", "ABG/VBG.", "Urinalysis, urine output assessment.", "Renal ultrasound.", "Compare to baseline."],
+          "ehr_plan": "Cr = {value} mg/dL (Severe High). eGFR [computed, low]. Stat K and acid/base check given AKI risk. Patient instructed to proceed to the emergency department or arrange same-day nephrology evaluation for AKI workup, fluid/electrolyte management, and consideration of admission.",
+          "patient_communication": "Your kidney function test is significantly elevated. Please go to the emergency department or come to the clinic immediately for evaluation. Do not take NSAIDs. Bring this notification with you."
+        },
+        "Critical High": {
+          "category": "Critical creatinine elevation (≥4.0 mg/dL) — likely severe AKI / RRT consideration",
+          "next_tests": ["Stat BMP, ABG/VBG.", "Urinalysis, urine output.", "Renal ultrasound.", "Hemoglobin (uremic anemia/bleeding)."],
+          "ehr_plan": "Cr = {value} mg/dL (Critical High). Stat BMP and acid/base. Patient instructed to proceed immediately to the nearest emergency department for AKI workup, hyperkalemia/acidosis management, and nephrology consultation for possible renal replacement therapy.",
+          "patient_communication": "Your kidney function test is at a critical level. Please go to the nearest emergency department right now. Do not drive yourself — have someone drive you, or call 911 if you are alone, very weak, or have decreased urination, swelling, or trouble breathing."
+        }
+      },
+      "sources": ["KDIGO 2012 AKI guideline (2026 update in draft)", "KDIGO 2024 CKD guideline"]
+    },
+
+    "calcium": {
+      "display_name": "Calcium (total)",
+      "loinc": "17861-6",
+      "synonyms": ["calcium", "ca", "ca++", "ca2+"],
+      "unit": "mg/dL",
+      "kind": "numeric",
+      "trendable": true,
+      "albumin_correction_note": "Always correct for albumin: corrected Ca = measured Ca + 0.8 × (4.0 − albumin). When albumin is provided in patient context, engine should apply correction and evaluate corrected value (Phase 2 enhancement).",
+      "thresholds": [
+        { "severity": "Critical Low",  "max": 7.0 },
+        { "severity": "Severe Low",    "min": 7.0, "max": 7.5 },
+        { "severity": "Moderate Low",  "min": 7.5, "max": 8.0 },
+        { "severity": "Mild Low",      "min": 8.0, "max": 8.5 },
+        { "severity": "Normal",        "min": 8.5, "max": 10.5 },
+        { "severity": "Mild High",     "min": 10.5, "max": 12.0 },
+        { "severity": "Moderate High", "min": 12.0, "max": 14.0 },
+        { "severity": "Severe High",   "min": 14.0, "max": 16.0 },
+        { "severity": "Critical High", "min": 16.0 }
+      ],
+      "follow_up": {
+        "Critical Low": {
+          "category": "Critical hypocalcemia (<7.0 mg/dL) — tetany / seizure risk",
+          "next_tests": ["Repeat Ca with ionized calcium.", "Albumin (correct), magnesium, phosphate.", "PTH, 25-OH vitamin D.", "ECG (QT prolongation)."],
+          "ehr_plan": "Ca = {value} mg/dL (Critical Low). Albumin-corrected Ca: [computed]. ECG obtained — [QT, findings]. Patient instructed to proceed immediately to the nearest emergency department for IV calcium gluconate, telemetry, and workup for cause (hypoparathyroidism, severe hypomagnesemia, vitamin D deficiency).",
+          "patient_communication": "Your calcium level is critically low. This can cause muscle spasms, seizures, or heart rhythm problems. Please go to the nearest emergency department right now. Do not drive yourself."
+        },
+        "Severe Low": {
+          "category": "Severe hypocalcemia (7.0–7.4 mg/dL)",
+          "next_tests": ["Repeat Ca, ionized Ca.", "Albumin, Mg, phosphate.", "PTH, 25-OH D.", "ECG."],
+          "ehr_plan": "Ca = {value} mg/dL (Severe Low). Symptoms: [perioral numbness, tetany, Chvostek/Trousseau, cramping]. If symptomatic — refer to ED for IV calcium. If asymptomatic — oral calcium + vitamin D, replete Mg, identify cause; recheck within days.",
+          "patient_communication": "Your calcium level is significantly low. Please come to the clinic today. We will start a calcium and vitamin D supplement. Go to the emergency department if you have muscle spasms, tingling around the mouth or fingers, or seizures."
+        },
+        "Moderate Low": {
+          "category": "Moderate hypocalcemia (7.5–7.9 mg/dL)",
+          "next_tests": ["Repeat Ca, albumin (correction), Mg.", "PTH, 25-OH D.", "Phosphate."],
+          "ehr_plan": "Ca = {value} mg/dL (Moderate Low). Albumin-corrected Ca: [computed]. Plan: oral calcium + vitamin D supplementation; replete Mg if low; PTH/vitamin D workup; recheck in 1–2 weeks.",
+          "patient_communication": "Your calcium level is moderately low. We will start a supplement and check vitamin D and parathyroid hormone levels. Call us if you develop muscle spasms or numbness around your mouth or hands."
+        },
+        "Mild Low": {
+          "category": "Mild hypocalcemia (8.0–8.4 mg/dL)",
+          "next_tests": ["Albumin (correction first).", "Repeat Ca.", "Vitamin D level."],
+          "ehr_plan": "Ca = {value} mg/dL (Mild Low). Albumin-corrected Ca: [computed]. Often factitious due to low albumin. Plan: vitamin D level; dietary counseling; recheck in 1–2 weeks.",
+          "patient_communication": "Your calcium level is slightly low. This is often related to low albumin or vitamin D. We will recheck the level and may start a supplement."
+        },
+        "Mild High": {
+          "category": "Mild hypercalcemia (10.5–11.9 mg/dL)",
+          "next_tests": ["Albumin (correction), repeat Ca, ionized Ca.", "PTH, 25-OH D, 1,25 D.", "Phosphate, Cr.", "TSH; SPEP if malignancy concern."],
+          "ehr_plan": "Ca = {value} mg/dL (Mild High). Albumin-corrected Ca: [computed]. Plan: PTH-driven workup (primary hyperparathyroidism, malignancy, vitamin D excess, thiazides, immobilization); review medications; recheck.",
+          "patient_communication": "Your calcium level is slightly high. We will check additional tests to find the cause. Stay well hydrated. Call us if you develop nausea, vomiting, abdominal pain, severe constipation, or confusion."
+        },
+        "Moderate High": {
+          "category": "Moderate hypercalcemia (12.0–13.9 mg/dL) — often symptomatic",
+          "next_tests": ["Stat repeat Ca, ionized Ca.", "PTH, PTHrP, 25-OH D, 1,25-OH D.", "BMP, Cr.", "EKG (shortened QT).", "Imaging if malignancy suspected."],
+          "ehr_plan": "Ca = {value} mg/dL (Moderate High). Albumin-corrected Ca: [computed]. Symptoms: [stones, bones, abdominal groans, psychic moans]. If symptomatic — refer to ED for aggressive saline hydration. If asymptomatic — initiate workup, push fluids, hold thiazides/Ca/Vit D; close follow-up.",
+          "patient_communication": "Your calcium level is moderately high. Please come to the clinic today. Drink plenty of water. Go to the emergency department if you have severe nausea, vomiting, confusion, or weakness."
+        },
+        "Severe High": {
+          "category": "Severe hypercalcemia (14.0–15.9 mg/dL) — hypercalcemic crisis",
+          "next_tests": ["Stat repeat Ca, ionized Ca.", "BMP, Cr, phosphate.", "ECG.", "PTH, PTHrP, vitamin D metabolites.", "Imaging for malignancy workup."],
+          "ehr_plan": "Ca = {value} mg/dL (Severe High; hypercalcemic crisis). Patient instructed to proceed immediately to the nearest emergency department for aggressive IV saline hydration, calcitonin, bisphosphonates, and workup for primary hyperparathyroidism vs malignancy. Hold all calcium, vitamin D, thiazides.",
+          "patient_communication": "Your calcium level is dangerously high. This is a medical emergency. Please go to the nearest emergency department right now. Do not drive yourself. Stop any calcium or vitamin D supplements until told otherwise."
+        },
+        "Critical High": {
+          "category": "Critical hypercalcemia (≥16.0 mg/dL) — life-threatening",
+          "next_tests": ["Stat ionized Ca.", "BMP, Cr.", "ECG (short QT, arrhythmia risk).", "Workup as above."],
+          "ehr_plan": "Ca = {value} mg/dL (Critical High). Patient instructed to proceed immediately to the nearest emergency department for IV saline, calcitonin, bisphosphonates, and consideration of hemodialysis. EMS activated as appropriate.",
+          "patient_communication": "Your calcium level is at a life-threatening level. Call 911 or go to the nearest emergency department right now. Do not drive yourself."
+        }
+      },
+      "sources": ["AAFP hypercalcemia approach", "Endocrine Society acute hypercalcemia guidance", "Medscape ED hypercalcemia"]
+    },
+
+    "hemoglobin": {
+      "display_name": "Hemoglobin",
+      "loinc": "718-7",
+      "synonyms": ["hemoglobin", "hgb", "hb"],
+      "unit": "g/dL",
+      "kind": "numeric",
+      "trendable": true,
+      "thresholds_by_context": {
+        "default": [
+          { "severity": "Critical Low", "max": 7.0 },
+          { "severity": "Severe Low",   "min": 7.0,  "max": 8.0 },
+          { "severity": "Moderate Low", "min": 8.0,  "max": 11.0 },
+          { "severity": "Mild Low",     "min": 11.0, "max": 12.0 },
+          { "severity": "Normal",       "min": 12.0, "max": 16.0 },
+          { "severity": "Mild High",    "min": 16.0, "max": 18.0 },
+          { "severity": "Severe High",  "min": 18.0 }
+        ],
+        "female": [
+          { "severity": "Critical Low", "max": 7.0 },
+          { "severity": "Severe Low",   "min": 7.0,  "max": 8.0 },
+          { "severity": "Moderate Low", "min": 8.0,  "max": 11.0 },
+          { "severity": "Mild Low",     "min": 11.0, "max": 12.0 },
+          { "severity": "Normal",       "min": 12.0, "max": 15.5 },
+          { "severity": "Mild High",    "min": 15.5, "max": 17.0 },
+          { "severity": "Severe High",  "min": 17.0 }
+        ],
+        "male": [
+          { "severity": "Critical Low", "max": 7.0 },
+          { "severity": "Severe Low",   "min": 7.0,  "max": 8.0 },
+          { "severity": "Moderate Low", "min": 8.0,  "max": 11.0 },
+          { "severity": "Mild Low",     "min": 11.0, "max": 13.0 },
+          { "severity": "Normal",       "min": 13.0, "max": 17.0 },
+          { "severity": "Mild High",    "min": 17.0, "max": 18.5 },
+          { "severity": "Severe High",  "min": 18.5 }
+        ]
+      },
+      "follow_up": {
+        "Critical Low": {
+          "category": "Critical anemia (Hgb <7.0 g/dL) — AABB transfusion threshold",
+          "next_tests": ["Type and screen.", "CBC w/ diff, retic count, peripheral smear.", "Iron studies, B12, folate, LDH, haptoglobin, bilirubin (hemolysis workup).", "Stool guaiac / occult blood.", "PT/INR, fibrinogen if bleeding."],
+          "ehr_plan": "Hgb = {value} g/dL (Critical Low). Patient instructed to proceed immediately to the nearest emergency department for type & screen, transfusion consideration per AABB (restrictive threshold <7 g/dL), and workup for cause (acute bleed vs hemolysis vs marrow failure).",
+          "patient_communication": "Your blood test shows a critically low red blood cell count (anemia). This may need a blood transfusion. Please go to the nearest emergency department right now. Do not drive yourself — have someone drive you, or call 911 if you are alone or feel unwell. Watch for chest pain, shortness of breath, or fainting."
+        },
+        "Severe Low": {
+          "category": "Severe anemia (Hgb 7.0–7.9 g/dL)",
+          "next_tests": ["CBC w/ diff, retic, peripheral smear.", "Iron studies, ferritin, TIBC.", "B12, folate.", "Hemolysis labs (LDH, haptoglobin, bilirubin) if indicated.", "Stool occult blood; consider GI evaluation."],
+          "ehr_plan": "Hgb = {value} g/dL (Severe Low). Symptoms: [fatigue, dyspnea on exertion, chest pain, lightheadedness]. If symptomatic, hemodynamic compromise, or active bleeding — refer to ED. Otherwise: full anemia workup, treat underlying cause; close follow-up; transfusion if symptomatic or threshold met.",
+          "patient_communication": "Your blood test shows a significantly low red blood cell count. Please come to the clinic today, or go to the emergency department right away if you have chest pain, shortness of breath, or feel like you may pass out."
+        },
+        "Moderate Low": {
+          "category": "Moderate anemia (Hgb 8.0–10.9 g/dL)",
+          "next_tests": ["CBC w/ diff, retic, peripheral smear.", "MCV-guided workup: <80 → iron studies; 80–100 → renal function, retic; >100 → B12, folate.", "Ferritin, TIBC.", "Stool occult blood if not pre-menopausal female with heavy menses."],
+          "ehr_plan": "Hgb = {value} g/dL (Moderate Low). MCV = [value] — workup branches by morphology. Plan: iron studies / B12 / folate as MCV indicates; retic count; peripheral smear; treat underlying cause; recheck in 2–4 weeks.",
+          "patient_communication": "Your blood test shows moderate anemia. We will check additional tests to find the cause and start treatment. Eat iron-rich foods. Call us if you develop chest pain, shortness of breath with light activity, or feel faint."
+        },
+        "Mild Low": {
+          "category": "Mild anemia",
+          "next_tests": ["Repeat CBC.", "MCV-guided workup as above.", "Ferritin, B12, folate as appropriate."],
+          "ehr_plan": "Hgb = {value} g/dL (Mild Low). MCV = [value]. Plan: workup based on MCV; reproductive-age females — assess menstrual losses; recheck in 4–6 weeks.",
+          "patient_communication": "Your blood test shows mild anemia. We will look into the cause and may start a supplement. Eat iron-rich foods (lean red meat, beans, leafy greens) with vitamin C to help absorption."
+        },
+        "Mild High": {
+          "category": "Mild erythrocytosis",
+          "next_tests": ["Repeat CBC.", "Confirm hydration.", "Smoking history, sleep apnea screening, SpO2.", "If persistent — JAK2 V617F, EPO level for polycythemia vera workup."],
+          "ehr_plan": "Hgb = {value} g/dL (Mild High). Plan: hydration assessment; review smoking, sleep apnea symptoms; recheck. If persistent or symptomatic, evaluate for secondary causes vs polycythemia vera.",
+          "patient_communication": "Your red blood cell count is slightly high. This can be related to dehydration, smoking, or sleep issues. We will recheck it and may do additional testing."
+        },
+        "Severe High": {
+          "category": "Marked erythrocytosis — concern for polycythemia vera or significant secondary cause",
+          "next_tests": ["Repeat CBC.", "JAK2 V617F mutation, EPO level.", "SpO2, sleep study consideration.", "Hematology referral if confirmed."],
+          "ehr_plan": "Hgb = {value} g/dL (Severe High). Plan: confirm with repeat; JAK2/EPO; assess for hyperviscosity symptoms (headache, visual changes, plethora, pruritus); hematology referral. Consider therapeutic phlebotomy if Hct >55% or symptomatic.",
+          "patient_communication": "Your red blood cell count is significantly elevated. We will refer you to a blood specialist for further evaluation. Stay well hydrated. Go to the emergency department if you have severe headache, visual changes, chest pain, or signs of a stroke (face droop, arm weakness, speech trouble)."
+        }
+      },
+      "sources": ["AABB 2023 RBC transfusion guideline", "AAFP anemia evaluation"]
+    },
+
+    "platelets": {
+      "display_name": "Platelets",
+      "loinc": "777-3",
+      "synonyms": ["platelets", "plt", "platelet count"],
+      "unit": "x10^3/uL",
+      "kind": "numeric",
+      "trendable": true,
+      "thresholds": [
+        { "severity": "Critical Low",  "max": 20 },
+        { "severity": "Severe Low",    "min": 20,  "max": 50 },
+        { "severity": "Moderate Low",  "min": 50,  "max": 100 },
+        { "severity": "Mild Low",      "min": 100, "max": 150 },
+        { "severity": "Normal",        "min": 150, "max": 450 },
+        { "severity": "Mild High",     "min": 450, "max": 600 },
+        { "severity": "Moderate High", "min": 600, "max": 1000 },
+        { "severity": "Severe High",   "min": 1000 }
+      ],
+      "follow_up": {
+        "Critical Low": {
+          "category": "Critical thrombocytopenia (<20 K/µL) — spontaneous bleeding risk",
+          "next_tests": ["Repeat CBC w/ peripheral smear (rule out clumping).", "PT/INR, PTT, fibrinogen.", "LDH, haptoglobin, bilirubin (TTP/HUS workup).", "Cr (TTP/HUS).", "HIV, HCV, H. pylori if isolated ITP.", "Medication review (heparin, vancomycin, sulfa)."],
+          "ehr_plan": "Platelets = {value} K/µL (Critical Low). Patient instructed to proceed immediately to the nearest emergency department for hematology evaluation, transfusion if bleeding or platelets <10 K/µL, and workup for ITP, TTP/HUS, DIC, drug-induced, or marrow failure. Strict bleeding precautions: avoid IM injections, NSAIDs, antiplatelets; soft toothbrush; no contact activity.",
+          "patient_communication": "Your platelet count is critically low — there is a high risk of spontaneous bleeding. Please go to the nearest emergency department right now. Avoid any activity that could cause injury. Do not take aspirin, ibuprofen, or naproxen. If you have any bleeding (nose, gums, urine, stool, severe headache) call 911."
+        },
+        "Severe Low": {
+          "category": "Severe thrombocytopenia (20–49 K/µL) — bleeding risk with trauma/procedures",
+          "next_tests": ["Repeat CBC w/ smear.", "PT/INR, PTT, fibrinogen.", "Hemolysis labs.", "Medication review.", "Hep B/C, HIV; H. pylori if ITP suspected."],
+          "ehr_plan": "Platelets = {value} K/µL (Severe Low). Plan: peripheral smear; coag panel; medication review (hold antiplatelets, NSAIDs); hematology referral; strict bleeding precautions. If active bleeding or rapidly falling — refer to ED.",
+          "patient_communication": "Your platelet count is significantly low. Avoid activities that could cause injury (contact sports, heavy lifting). Do not take aspirin, ibuprofen, or naproxen. Use a soft toothbrush. Call us or go to the emergency department right away if you have any bleeding (nose, gums, easy bruising spreading, blood in urine or stool, severe headache)."
+        },
+        "Moderate Low": {
+          "category": "Moderate thrombocytopenia (50–99 K/µL)",
+          "next_tests": ["Repeat CBC w/ smear.", "Coag panel.", "Medication review.", "ITP workup if isolated."],
+          "ehr_plan": "Platelets = {value} K/µL (Moderate Low). Plan: peripheral smear; coag panel; review meds (heparin, vancomycin, valproate, sulfa); recheck. Hematology referral if persistent or worsening.",
+          "patient_communication": "Your platelet count is moderately low. We will look into the cause. Avoid heavy contact activity and over-the-counter pain medications like ibuprofen or naproxen. Call us if you develop unusual bruising or bleeding."
+        },
+        "Mild Low": {
+          "category": "Mild thrombocytopenia (100–149 K/µL)",
+          "next_tests": ["Repeat CBC.", "Peripheral smear (rule out clumping).", "Medication review."],
+          "ehr_plan": "Platelets = {value} K/µL (Mild Low). Plan: rule out platelet clumping (smear); recheck in 2–4 weeks; medication review.",
+          "patient_communication": "Your platelet count is slightly low. We will recheck it. Often this is not serious, but call us if you notice unusual bruising or bleeding."
+        },
+        "Mild High": {
+          "category": "Mild thrombocytosis (450–599 K/µL)",
+          "next_tests": ["Repeat CBC.", "CRP, ESR (rule out reactive cause: infection, inflammation, iron deficiency).", "Iron studies."],
+          "ehr_plan": "Platelets = {value} K/µL (Mild High). Most often reactive. Plan: workup for inflammation, infection, iron deficiency; recheck in 4–6 weeks.",
+          "patient_communication": "Your platelet count is slightly elevated. This is often related to inflammation, infection, or low iron. We will look into the cause."
+        },
+        "Moderate High": {
+          "category": "Moderate thrombocytosis (600–999 K/µL)",
+          "next_tests": ["Repeat CBC.", "Iron studies, CRP/ESR.", "Consider JAK2 V617F if persistent or signs of myeloproliferative disease."],
+          "ehr_plan": "Platelets = {value} K/µL (Moderate High). Plan: rule out reactive causes; if persistent or symptomatic — JAK2 testing and hematology referral.",
+          "patient_communication": "Your platelet count is moderately elevated. We will recheck it and look for a cause."
+        },
+        "Severe High": {
+          "category": "Marked thrombocytosis (≥1000 K/µL) — thrombosis / bleeding risk",
+          "next_tests": ["Confirm with repeat.", "JAK2, CALR, MPL.", "Iron studies.", "Hematology referral."],
+          "ehr_plan": "Platelets = {value} K/µL (Severe High). Plan: hematology referral; assess thrombotic and bleeding risk; consider aspirin if no contraindication. Refer to ED if signs of thrombosis (stroke, MI, DVT/PE).",
+          "patient_communication": "Your platelet count is significantly elevated, which can increase clotting and (paradoxically) bleeding risk. We will refer you to a blood specialist. Go to the emergency department if you have signs of a stroke (face droop, arm weakness, speech trouble), chest pain, leg swelling, or shortness of breath."
+        }
+      },
+      "sources": ["AAFP 2022 thrombocytopenia evaluation", "ASH 2025 critical bleeding ITP guideline"]
+    },
+
+    "wbc": {
+      "display_name": "White Blood Cell Count",
+      "loinc": "6690-2",
+      "synonyms": ["wbc", "white blood cell count", "white blood cells", "leukocytes"],
+      "unit": "x10^3/uL",
+      "kind": "numeric",
+      "trendable": true,
+      "differential_note": "ANC = (segs% + bands%) × WBC × 10. ANC <500 = severe neutropenia; ANC <500 + fever (T ≥38.3°C or ≥38°C for >1 h) = febrile neutropenia, oncologic emergency.",
+      "thresholds": [
+        { "severity": "Critical Low",  "max": 1.0 },
+        { "severity": "Severe Low",    "min": 1.0, "max": 2.0 },
+        { "severity": "Moderate Low",  "min": 2.0, "max": 3.0 },
+        { "severity": "Mild Low",      "min": 3.0, "max": 4.5 },
+        { "severity": "Normal",        "min": 4.5, "max": 11.0 },
+        { "severity": "Mild High",     "min": 11.0, "max": 15.0 },
+        { "severity": "Moderate High", "min": 15.0, "max": 25.0 },
+        { "severity": "Severe High",   "min": 25.0, "max": 50.0 },
+        { "severity": "Critical High", "min": 50.0 }
+      ],
+      "follow_up": {
+        "Critical Low": {
+          "category": "Critical leukopenia / agranulocytosis (WBC <1.0 K/µL) — severe infection risk",
+          "next_tests": ["Stat CBC w/ differential and ANC.", "Peripheral smear.", "Blood cultures × 2 if febrile.", "Medication review (chemo, antithyroids, sulfa, clozapine)."],
+          "ehr_plan": "WBC = {value} K/µL (Critical Low). ANC = [computed]. If febrile or any infection signs — patient instructed to proceed immediately to the nearest emergency department for blood cultures and empiric broad-spectrum IV antibiotics (febrile neutropenia is an oncologic emergency). If afebrile — urgent hematology evaluation; reverse isolation precautions; review and hold offending medications.",
+          "patient_communication": "Your white blood cell count is critically low — your body cannot fight infections normally. If you have ANY fever (≥100.4°F / 38°C), chills, or signs of infection, go to the nearest emergency department immediately. Avoid crowds, raw foods, and sick contacts. Wash hands frequently. Call us right away if anything changes."
+        },
+        "Severe Low": {
+          "category": "Severe leukopenia (WBC 1.0–1.9 K/µL)",
+          "next_tests": ["CBC w/ differential, ANC.", "Peripheral smear.", "Blood cultures if febrile.", "Medication review."],
+          "ehr_plan": "WBC = {value} K/µL (Severe Low). ANC = [computed]. If ANC <500 and febrile — refer to ED. Otherwise: urgent hematology referral; medication review; rule out viral cause (HIV, hepatitis, EBV); CBC trend.",
+          "patient_communication": "Your white blood cell count is significantly low. If you develop a fever (≥100.4°F / 38°C), chills, sore throat, or other infection signs, go to the emergency department right away. Wash hands frequently and avoid sick contacts."
+        },
+        "Moderate Low": {
+          "category": "Moderate leukopenia (WBC 2.0–2.9 K/µL)",
+          "next_tests": ["Repeat CBC w/ differential.", "Medication review.", "Consider HIV, hepatitis, EBV, B12/folate."],
+          "ehr_plan": "WBC = {value} K/µL (Moderate Low). Plan: repeat CBC; review meds; viral workup; recheck within 1–2 weeks; refer hematology if persistent.",
+          "patient_communication": "Your white blood cell count is moderately low. We will look into the cause. Call us if you develop fever or signs of infection."
+        },
+        "Mild Low": {
+          "category": "Mild leukopenia (WBC 3.0–4.4 K/µL)",
+          "next_tests": ["Repeat CBC.", "Differential.", "Medication review."],
+          "ehr_plan": "WBC = {value} K/µL (Mild Low). Plan: recheck CBC in 2–4 weeks; medication review; benign ethnic neutropenia possible (especially in African ancestry) — assess differential.",
+          "patient_communication": "Your white blood cell count is slightly low. We will recheck it. Many people have a mildly low count without any problem."
+        },
+        "Mild High": {
+          "category": "Mild leukocytosis (WBC 11–14.9 K/µL)",
+          "next_tests": ["CBC w/ differential.", "Assess for infection, inflammation, stress, smoking."],
+          "ehr_plan": "WBC = {value} K/µL (Mild High). Most commonly reactive (infection, inflammation, stress, smoking, steroids). Plan: identify and treat underlying cause; recheck after resolution.",
+          "patient_communication": "Your white blood cell count is slightly elevated, often a sign of infection or inflammation. We will look for a cause."
+        },
+        "Moderate High": {
+          "category": "Moderate leukocytosis (WBC 15–24.9 K/µL)",
+          "next_tests": ["CBC w/ differential.", "Infection workup as indicated.", "Consider blood cultures if febrile."],
+          "ehr_plan": "WBC = {value} K/µL (Moderate High). Plan: infection workup, treat source if identified; recheck after intervention.",
+          "patient_communication": "Your white blood cell count is moderately elevated, suggesting your body is fighting an infection or significant inflammation. We will identify the cause."
+        },
+        "Severe High": {
+          "category": "Severe leukocytosis (WBC 25–49.9 K/µL) — concern for serious infection or hematologic disorder",
+          "next_tests": ["Stat CBC w/ differential and smear.", "Blood cultures, infection workup.", "Consider hematology referral.", "Lactate if sepsis concern."],
+          "ehr_plan": "WBC = {value} K/µL (Severe High). Differential and peripheral smear pending. Plan: aggressive infection workup; if hemodynamically unstable or septic appearing — refer to ED. If smear shows blasts or atypical cells — urgent hematology referral.",
+          "patient_communication": "Your white blood cell count is significantly elevated. Please come to the clinic today for further evaluation. Go to the emergency department if you have fever with chills, very fast heart rate, low blood pressure symptoms (lightheadedness), severe abdominal or chest pain."
+        },
+        "Critical High": {
+          "category": "Critical leukocytosis (≥50 K/µL) — leukemia or leukemoid reaction",
+          "next_tests": ["Stat CBC w/ differential and peripheral smear.", "Hematology consultation.", "LDH, uric acid, BMP (tumor lysis risk).", "Consider flow cytometry."],
+          "ehr_plan": "WBC = {value} K/µL (Critical High). Patient instructed to proceed immediately to the nearest emergency department for hematology evaluation, peripheral smear review, and workup for leukemia / leukemoid reaction with attention to leukostasis (especially WBC >100 K/µL with neuro/pulm symptoms).",
+          "patient_communication": "Your white blood cell count is at a critical level. Please go to the nearest emergency department right now. Do not drive yourself. Watch for confusion, headache, vision changes, or shortness of breath."
+        }
+      },
+      "sources": ["StatPearls febrile neutropenia", "ASCO/IDSA febrile neutropenia guideline"]
+    },
+
+    "alt": {
+      "display_name": "Alanine Aminotransferase (ALT)",
+      "loinc": "1742-6",
+      "synonyms": ["alt", "alanine aminotransferase", "sgpt"],
+      "unit": "U/L",
+      "kind": "numeric",
+      "trendable": true,
+      "uln_note": "ULN ~33 U/L (women), ~42 U/L (men). Severity tiers below use sex-stratified bands; default uses 42.",
+      "thresholds_by_context": {
+        "default": [
+          { "severity": "Normal",        "max": 42 },
+          { "severity": "Mild High",     "min": 42,  "max": 126 },
+          { "severity": "Moderate High", "min": 126, "max": 420 },
+          { "severity": "Severe High",   "min": 420, "max": 1000 },
+          { "severity": "Critical High", "min": 1000 }
+        ],
+        "female": [
+          { "severity": "Normal",        "max": 33 },
+          { "severity": "Mild High",     "min": 33,  "max": 99 },
+          { "severity": "Moderate High", "min": 99,  "max": 330 },
+          { "severity": "Severe High",   "min": 330, "max": 1000 },
+          { "severity": "Critical High", "min": 1000 }
+        ],
+        "male": [
+          { "severity": "Normal",        "max": 42 },
+          { "severity": "Mild High",     "min": 42,  "max": 126 },
+          { "severity": "Moderate High", "min": 126, "max": 420 },
+          { "severity": "Severe High",   "min": 420, "max": 1000 },
+          { "severity": "Critical High", "min": 1000 }
+        ]
+      },
+      "follow_up": {
+        "Mild High": {
+          "category": "Mild ALT elevation (<3× ULN)",
+          "next_tests": ["Repeat ALT/AST in 2–4 weeks.", "AST/ALT ratio.", "Hepatitis B and C serology.", "Risk factors: alcohol, medications, NAFLD risk (BMI, A1C, lipids).", "If persistent: ultrasound, ferritin, ANA, ceruloplasmin, A1AT."],
+          "ehr_plan": "ALT = {value} U/L (Mild High; <3× ULN). Plan: review meds (acetaminophen, statins, NSAIDs, supplements, alcohol); HBV/HCV serology; metabolic workup (A1C, lipids, BMI); recheck in 2–4 weeks. If persistent — RUQ ultrasound and broader workup.",
+          "patient_communication": "Your liver enzyme is mildly elevated. This is often related to medications, alcohol, weight, or hepatitis. We will check additional tests and recheck the level. Avoid alcohol until the level returns to normal. Tell us about all medications and supplements you take, including over-the-counter pain relievers."
+        },
+        "Moderate High": {
+          "category": "Moderate ALT elevation (3–10× ULN)",
+          "next_tests": ["Repeat ALT/AST.", "Total/direct bilirubin, ALP, GGT, albumin, PT/INR.", "Viral hepatitis panel (HAV IgM, HBsAg, HBcAb IgM, HCV Ab, HCV RNA).", "RUQ ultrasound.", "Acetaminophen level if any concern.", "Autoimmune workup (ANA, ASMA, anti-LKM, IgG)."],
+          "ehr_plan": "ALT = {value} U/L (Moderate High; 3–10× ULN). Plan: full hepatic panel including coag; viral hepatitis serologies; RUQ ultrasound; medication review (especially acetaminophen, statins, supplements); alcohol cessation; hepatology referral if persistent or any synthetic dysfunction (high INR, low albumin, hypoglycemia, encephalopathy).",
+          "patient_communication": "Your liver enzymes are moderately elevated. We will check additional tests including for hepatitis. Avoid alcohol completely. Stop or limit acetaminophen (Tylenol). Tell us about all medications and supplements. Go to the emergency department if you develop yellow skin or eyes, severe abdominal pain, confusion, or unusual bleeding."
+        },
+        "Severe High": {
+          "category": "Severe ALT elevation (>10× ULN) — possible acute hepatitis",
+          "next_tests": ["Stat hepatic panel: total/direct bilirubin, ALP, GGT, albumin, PT/INR.", "Acetaminophen level.", "Viral hepatitis panel.", "Acute hepatitis workup including HSV, CMV, EBV if immunocompromised.", "RUQ ultrasound."],
+          "ehr_plan": "ALT = {value} U/L (Severe High; >10× ULN) — concern for acute hepatitis (drug-induced, viral, ischemic, autoimmune). PT/INR, bilirubin, encephalopathy assessment. If any sign of acute liver failure (encephalopathy, INR >1.5) — patient instructed to proceed immediately to the nearest emergency department for transplant-center referral. Otherwise — urgent hepatology consultation within 24–48 h.",
+          "patient_communication": "Your liver enzymes are very significantly elevated, which can mean acute hepatitis. Please come to the clinic today, or go to the emergency department right away if you have yellow skin or eyes, confusion, severe nausea or vomiting, abdominal pain, or any unusual bleeding or bruising. Stop alcohol and any non-essential medications including acetaminophen until reviewed."
+        },
+        "Critical High": {
+          "category": "Critical ALT elevation (>1000 U/L) — possible acute liver failure",
+          "next_tests": ["Stat hepatic panel + PT/INR.", "Acetaminophen level, salicylate level.", "Lactate, glucose, ammonia.", "Viral hepatitis panel.", "Tox screen."],
+          "ehr_plan": "ALT = {value} U/L (Critical High). Patient instructed to proceed immediately to the nearest emergency department for evaluation for acute liver failure, transplant-center transfer if encephalopathic or INR >1.5, and treatment of underlying cause (e.g., N-acetylcysteine for acetaminophen toxicity).",
+          "patient_communication": "Your liver enzymes are at a critical level. Please go to the nearest emergency department right now. Do not drive yourself. Tell the ED team about any acetaminophen (Tylenol) use, including in cold/flu medications, and any supplements or alcohol use."
+        }
+      },
+      "sources": ["AASLD 2017 abnormal liver chemistries", "ACG abnormal liver enzymes guidance"]
+    },
+
+    "ast": {
+      "display_name": "Aspartate Aminotransferase (AST)",
+      "loinc": "1920-8",
+      "synonyms": ["ast", "aspartate aminotransferase", "sgot"],
+      "unit": "U/L",
+      "kind": "numeric",
+      "trendable": true,
+      "uln_note": "ULN ~35 U/L. AST/ALT ratio: >2 suggestive of alcoholic hepatitis; <1 typical of viral or NAFLD.",
+      "thresholds_by_context": {
+        "default": [
+          { "severity": "Normal",        "max": 35 },
+          { "severity": "Mild High",     "min": 35,  "max": 105 },
+          { "severity": "Moderate High", "min": 105, "max": 350 },
+          { "severity": "Severe High",   "min": 350, "max": 1000 },
+          { "severity": "Critical High", "min": 1000 }
+        ],
+        "female": [
+          { "severity": "Normal",        "max": 32 },
+          { "severity": "Mild High",     "min": 32,  "max": 96 },
+          { "severity": "Moderate High", "min": 96,  "max": 320 },
+          { "severity": "Severe High",   "min": 320, "max": 1000 },
+          { "severity": "Critical High", "min": 1000 }
+        ],
+        "male": [
+          { "severity": "Normal",        "max": 40 },
+          { "severity": "Mild High",     "min": 40,  "max": 120 },
+          { "severity": "Moderate High", "min": 120, "max": 400 },
+          { "severity": "Severe High",   "min": 400, "max": 1000 },
+          { "severity": "Critical High", "min": 1000 }
+        ]
+      },
+      "follow_up": {
+        "Mild High": {
+          "category": "Mild AST elevation (<3× ULN)",
+          "next_tests": ["Repeat AST/ALT.", "AST/ALT ratio.", "CK (rule out muscle source).", "HBV/HCV serology.", "Metabolic workup."],
+          "ehr_plan": "AST = {value} U/L (Mild High). AST/ALT ratio = [computed]. Plan: rule out muscle source (CK if isolated AST elevation); HBV/HCV; alcohol/med review; recheck in 2–4 weeks.",
+          "patient_communication": "Your liver enzyme is mildly elevated. We will check related tests and recheck the level. Avoid alcohol. Tell us about all medications and supplements."
+        },
+        "Moderate High": {
+          "category": "Moderate AST elevation (3–10× ULN)",
+          "next_tests": ["Full hepatic panel + PT/INR.", "Viral hepatitis panel.", "RUQ ultrasound.", "CK if muscle source suspected."],
+          "ehr_plan": "AST = {value} U/L (Moderate High). AST/ALT ratio = [computed]. Plan: full hepatic panel, viral hepatitis serologies, RUQ ultrasound; alcohol cessation; medication review; consider hepatology referral.",
+          "patient_communication": "Your liver enzymes are moderately elevated. We will check for hepatitis and other causes. Avoid alcohol completely. Go to the emergency department if you develop yellow skin or eyes, severe abdominal pain, confusion, or unusual bleeding."
+        },
+        "Severe High": {
+          "category": "Severe AST elevation (>10× ULN) — possible acute hepatitis or rhabdomyolysis",
+          "next_tests": ["Stat hepatic panel + PT/INR.", "Acetaminophen level.", "Viral hepatitis panel.", "CK (rhabdomyolysis); BMP, urinalysis.", "RUQ ultrasound."],
+          "ehr_plan": "AST = {value} U/L (Severe High). AST/ALT ratio = [computed]. Differential includes acute hepatitis vs rhabdomyolysis (check CK). If hepatic — synthetic function (PT/INR, albumin), encephalopathy assessment; if any sign of ALF or rhabdo with AKI — patient instructed to proceed immediately to ED. Otherwise — urgent hepatology or appropriate referral within 24–48 h.",
+          "patient_communication": "Your AST level is very significantly elevated. This may indicate liver inflammation or muscle injury. Please come to the clinic today, or go to the emergency department if you have yellow skin or eyes, confusion, dark cola-colored urine, severe muscle pain, or unusual bleeding."
+        },
+        "Critical High": {
+          "category": "Critical AST elevation (>1000 U/L) — possible acute liver failure or rhabdomyolysis",
+          "next_tests": ["Stat hepatic panel + PT/INR + CK.", "BMP, urinalysis.", "Acetaminophen level.", "Viral hepatitis panel."],
+          "ehr_plan": "AST = {value} U/L (Critical High). Patient instructed to proceed immediately to the nearest emergency department for evaluation of acute liver failure or rhabdomyolysis with AKI risk; transplant-center transfer if hepatic ALF.",
+          "patient_communication": "Your AST level is at a critical level. Please go to the nearest emergency department right now. Do not drive yourself. Tell the ED team about any acetaminophen use, supplements, alcohol use, recent intense exercise, falls, or muscle injury."
+        }
+      },
+      "sources": ["AASLD 2017", "ACG"]
+    },
+
+    "bicarbonate": {
+      "display_name": "Bicarbonate (HCO3)",
+      "loinc": "1963-8",
+      "synonyms": ["bicarbonate", "hco3", "co2", "tco2", "bicarb"],
+      "unit": "mEq/L",
+      "kind": "numeric",
+      "trendable": true,
+      "anion_gap_note": "When Na, Cl, and HCO3 are all available, engine should compute anion gap = Na − (Cl + HCO3); normal 8–12. Phase 3 enhancement.",
+      "thresholds": [
+        { "severity": "Critical Low",  "max": 10 },
+        { "severity": "Severe Low",    "min": 10, "max": 15 },
+        { "severity": "Moderate Low",  "min": 15, "max": 18 },
+        { "severity": "Mild Low",      "min": 18, "max": 22 },
+        { "severity": "Normal",        "min": 22, "max": 30 },
+        { "severity": "Mild High",     "min": 30, "max": 35 },
+        { "severity": "Moderate High", "min": 35, "max": 40 },
+        { "severity": "Severe High",   "min": 40 }
+      ],
+      "follow_up": {
+        "Critical Low": {
+          "category": "Critical metabolic acidosis (HCO3 <10 mEq/L)",
+          "next_tests": ["Stat ABG/VBG.", "BMP (anion gap), lactate.", "Glucose, urine/serum ketones (DKA).", "Salicylate level if intentional ingestion suspected.", "Cr, K."],
+          "ehr_plan": "HCO3 = {value} mEq/L (Critical Low). Anion gap = [computed]. Patient instructed to proceed immediately to the nearest emergency department for ABG, lactate, workup of severe metabolic acidosis (DKA, lactic acidosis, AKI/uremia, toxic alcohol/salicylate ingestion), and IV bicarbonate / definitive treatment.",
+          "patient_communication": "Your blood test shows your body is severely acidic. This is a medical emergency. Please go to the nearest emergency department right now. Do not drive yourself."
+        },
+        "Severe Low": {
+          "category": "Severe metabolic acidosis (HCO3 10–14 mEq/L)",
+          "next_tests": ["ABG/VBG.", "BMP, anion gap, lactate.", "Glucose, ketones.", "Cr, BUN."],
+          "ehr_plan": "HCO3 = {value} mEq/L (Severe Low). Anion gap = [computed]. Plan: workup for cause (DKA, lactic acidosis, uremia, ingestion); refer to ED for monitored treatment.",
+          "patient_communication": "Your blood test shows significant acidity. Please go to the emergency department for evaluation and treatment."
+        },
+        "Moderate Low": {
+          "category": "Moderate metabolic acidosis (HCO3 15–17 mEq/L)",
+          "next_tests": ["BMP, anion gap.", "Lactate, glucose, ketones.", "Cr, urinalysis."],
+          "ehr_plan": "HCO3 = {value} mEq/L (Moderate Low). Anion gap = [computed]. Plan: identify cause; if anion gap acidosis with DKA, lactic acidosis, or AKI — refer for inpatient management. If non-anion gap (RTA, GI losses) — workup and outpatient management possible.",
+          "patient_communication": "Your blood test shows moderate acidity. We will check additional tests to find the cause. Please come to the clinic today, or go to the emergency department if you feel very weak, are vomiting, have rapid breathing, or feel confused."
+        },
+        "Mild Low": {
+          "category": "Mild metabolic acidosis (HCO3 18–21 mEq/L)",
+          "next_tests": ["BMP, anion gap.", "Cr, glucose."],
+          "ehr_plan": "HCO3 = {value} mEq/L (Mild Low). Anion gap = [computed]. Plan: identify cause (mild dehydration, GI losses, early CKD, mild DKA); recheck.",
+          "patient_communication": "Your bicarbonate is slightly low, suggesting mild acidity in your blood. We will look into the cause."
+        },
+        "Mild High": {
+          "category": "Mild metabolic alkalosis (HCO3 30–34 mEq/L)",
+          "next_tests": ["BMP, K (often hypokalemic).", "Volume status, urine Cl.", "Medication review (diuretics)."],
+          "ehr_plan": "HCO3 = {value} mEq/L (Mild High). K = [value]. Plan: assess for vomiting, NG suction, diuretic use; replete K and Cl as needed; recheck.",
+          "patient_communication": "Your bicarbonate level is slightly elevated. We will look into the cause and may adjust your medications."
+        },
+        "Moderate High": {
+          "category": "Moderate metabolic alkalosis (HCO3 35–39 mEq/L)",
+          "next_tests": ["BMP, K, Mg.", "Urine Cl.", "Medication review."],
+          "ehr_plan": "HCO3 = {value} mEq/L (Moderate High). Plan: workup with urine Cl (saline-responsive vs unresponsive); replete K, Mg; treat underlying cause.",
+          "patient_communication": "Your bicarbonate is moderately elevated. Please come to the clinic for further evaluation."
+        },
+        "Severe High": {
+          "category": "Severe metabolic alkalosis (HCO3 ≥40 mEq/L)",
+          "next_tests": ["ABG.", "BMP, K, Mg, Cl.", "Urine electrolytes."],
+          "ehr_plan": "HCO3 = {value} mEq/L (Severe High). Plan: refer to ED for monitored correction (especially if symptomatic with weakness, arrhythmia, or seizure); identify and treat cause.",
+          "patient_communication": "Your bicarbonate level is significantly elevated. Please go to the emergency department for evaluation, especially if you feel weak, dizzy, or have abnormal heart rhythms."
+        }
+      },
+      "sources": ["UpToDate metabolic acidosis/alkalosis"]
+    },
+
+    "magnesium": {
+      "display_name": "Magnesium",
+      "loinc": "2601-3",
+      "synonyms": ["magnesium", "mg"],
+      "unit": "mg/dL",
+      "kind": "numeric",
+      "trendable": true,
+      "thresholds": [
+        { "severity": "Critical Low",  "max": 1.0 },
+        { "severity": "Severe Low",    "min": 1.0, "max": 1.4 },
+        { "severity": "Mild Low",      "min": 1.4, "max": 1.8 },
+        { "severity": "Normal",        "min": 1.8, "max": 2.5 },
+        { "severity": "Mild High",     "min": 2.5, "max": 3.5 },
+        { "severity": "Severe High",   "min": 3.5, "max": 5.0 },
+        { "severity": "Critical High", "min": 5.0 }
+      ],
+      "follow_up": {
+        "Critical Low": {
+          "category": "Critical hypomagnesemia (<1.0 mg/dL) — arrhythmia / seizure risk",
+          "next_tests": ["Repeat Mg.", "BMP, K, Ca.", "12-lead ECG (QT prolongation, torsades risk)."],
+          "ehr_plan": "Mg = {value} mg/dL (Critical Low). ECG obtained — [QT, findings]. Patient instructed to proceed immediately to the nearest emergency department for IV magnesium replacement and continuous cardiac monitoring; replete K and Ca which often co-exist.",
+          "patient_communication": "Your magnesium level is critically low. This can cause dangerous heart rhythm problems and seizures. Please go to the nearest emergency department right now. Do not drive yourself."
+        },
+        "Severe Low": {
+          "category": "Severe hypomagnesemia (1.0–1.3 mg/dL)",
+          "next_tests": ["Repeat Mg.", "K, Ca, BMP.", "ECG.", "Review meds (PPIs, diuretics, alcohol use)."],
+          "ehr_plan": "Mg = {value} mg/dL (Severe Low). ECG obtained — [findings]. Plan: oral or IV Mg repletion based on symptoms; check and replete K/Ca; review meds (PPI, diuretic, alcohol). If symptomatic (tetany, seizure, arrhythmia) — refer to ED.",
+          "patient_communication": "Your magnesium level is significantly low. We will start a magnesium supplement. Go to the emergency department if you have muscle cramps, twitching, palpitations, or seizures."
+        },
+        "Mild Low": {
+          "category": "Mild hypomagnesemia (1.4–1.7 mg/dL)",
+          "next_tests": ["K, Ca.", "Medication review."],
+          "ehr_plan": "Mg = {value} mg/dL (Mild Low). Plan: oral Mg repletion (e.g., magnesium oxide 400 mg daily); review meds; recheck in 1–2 weeks.",
+          "patient_communication": "Your magnesium level is slightly low. We will start a supplement. Eat magnesium-rich foods (nuts, seeds, leafy greens, whole grains)."
+        },
+        "Mild High": {
+          "category": "Mild hypermagnesemia (2.5–3.4 mg/dL)",
+          "next_tests": ["Repeat Mg.", "Cr (renal function).", "Review Mg-containing antacids/laxatives."],
+          "ehr_plan": "Mg = {value} mg/dL (Mild High). Plan: hold Mg-containing products; assess renal function; recheck.",
+          "patient_communication": "Your magnesium level is slightly high. Avoid magnesium-containing antacids and laxatives. We will recheck the level."
+        },
+        "Severe High": {
+          "category": "Severe hypermagnesemia (3.5–4.9 mg/dL) — neuromuscular/cardiac depression",
+          "next_tests": ["Stat repeat Mg.", "Cr.", "ECG.", "Calcium (treatment)."],
+          "ehr_plan": "Mg = {value} mg/dL (Severe High). Plan: refer to ED for IV calcium gluconate, supportive care, and consideration of dialysis if severe AKI; hold all Mg-containing medications/products.",
+          "patient_communication": "Your magnesium level is significantly elevated. Please go to the emergency department. Stop any magnesium products."
+        },
+        "Critical High": {
+          "category": "Critical hypermagnesemia (≥5.0 mg/dL) — life-threatening",
+          "next_tests": ["Stat ECG.", "BMP, Cr, calcium.", "Mental status, respiratory assessment."],
+          "ehr_plan": "Mg = {value} mg/dL (Critical High). Patient instructed to proceed immediately to the nearest emergency department for IV calcium, dialysis, and cardiopulmonary support.",
+          "patient_communication": "Your magnesium level is at a life-threatening level. Call 911 or go to the nearest emergency department right now."
+        }
+      },
+      "sources": ["UpToDate hypo/hypermagnesemia"]
+    },
+
+    "phosphate": {
+      "display_name": "Phosphate",
+      "loinc": "2777-1",
+      "synonyms": ["phosphate", "phos", "phosphorus"],
+      "unit": "mg/dL",
+      "kind": "numeric",
+      "trendable": true,
+      "thresholds": [
+        { "severity": "Critical Low",  "max": 1.0 },
+        { "severity": "Severe Low",    "min": 1.0, "max": 1.5 },
+        { "severity": "Moderate Low",  "min": 1.5, "max": 2.0 },
+        { "severity": "Mild Low",      "min": 2.0, "max": 2.5 },
+        { "severity": "Normal",        "min": 2.5, "max": 4.5 },
+        { "severity": "Mild High",     "min": 4.5, "max": 5.5 },
+        { "severity": "Moderate High", "min": 5.5, "max": 7.0 },
+        { "severity": "Severe High",   "min": 7.0 }
+      ],
+      "follow_up": {
+        "Critical Low": {
+          "category": "Critical hypophosphatemia (<1.0 mg/dL) — risk of respiratory failure, rhabdomyolysis, hemolysis",
+          "next_tests": ["Repeat phosphate.", "BMP, Mg, K.", "CK.", "Review for refeeding syndrome (recent malnutrition + carbohydrate load)."],
+          "ehr_plan": "Phos = {value} mg/dL (Critical Low). Concern for refeeding syndrome or severe depletion. Patient instructed to proceed immediately to the nearest emergency department for IV phosphate replacement and monitoring; review nutritional status.",
+          "patient_communication": "Your phosphate level is critically low. Please go to the emergency department right now."
+        },
+        "Severe Low": {
+          "category": "Severe hypophosphatemia (1.0–1.4 mg/dL)",
+          "next_tests": ["Repeat phosphate.", "Mg, K.", "Review nutrition, alcohol use."],
+          "ehr_plan": "Phos = {value} mg/dL (Severe Low). Plan: oral or IV phosphate replacement; check Mg and K; review for refeeding syndrome, alcohol use; recheck within days.",
+          "patient_communication": "Your phosphate level is significantly low. Please come to the clinic today for further evaluation. We may start a supplement."
+        },
+        "Moderate Low": {
+          "category": "Moderate hypophosphatemia (1.5–1.9 mg/dL)",
+          "next_tests": ["Repeat phosphate.", "Vitamin D level.", "Mg, Ca."],
+          "ehr_plan": "Phos = {value} mg/dL (Moderate Low). Plan: oral phosphate repletion; vitamin D level; recheck.",
+          "patient_communication": "Your phosphate level is moderately low. We will look into the cause and may start a supplement."
+        },
+        "Mild Low": {
+          "category": "Mild hypophosphatemia (2.0–2.4 mg/dL)",
+          "next_tests": ["Repeat phosphate.", "Dietary review."],
+          "ehr_plan": "Phos = {value} mg/dL (Mild Low). Plan: dietary repletion; recheck.",
+          "patient_communication": "Your phosphate is slightly low. Eat phosphate-rich foods (dairy, nuts, beans, fish)."
+        },
+        "Mild High": {
+          "category": "Mild hyperphosphatemia (4.5–5.4 mg/dL)",
+          "next_tests": ["Cr (assess renal function).", "Calcium.", "PTH if persistent."],
+          "ehr_plan": "Phos = {value} mg/dL (Mild High). Plan: assess renal function; review supplements/laxatives; recheck.",
+          "patient_communication": "Your phosphate level is slightly high. Often this is related to kidney function or diet."
+        },
+        "Moderate High": {
+          "category": "Moderate hyperphosphatemia (5.5–6.9 mg/dL)",
+          "next_tests": ["Cr, Ca, PTH.", "Vitamin D.", "Consider tumor lysis labs if oncology context."],
+          "ehr_plan": "Phos = {value} mg/dL (Moderate High). Plan: workup for CKD, hypoparathyroidism, vitamin D toxicity, tumor lysis. Phosphate binder consideration if CKD.",
+          "patient_communication": "Your phosphate level is moderately elevated. We will check kidney function and other tests."
+        },
+        "Severe High": {
+          "category": "Severe hyperphosphatemia (≥7.0 mg/dL) — concern for tumor lysis or AKI",
+          "next_tests": ["Stat BMP, Cr, Ca.", "LDH, uric acid (tumor lysis).", "ECG (hypocalcemia from Ca-P precipitation)."],
+          "ehr_plan": "Phos = {value} mg/dL (Severe High). Plan: refer to ED — concern for tumor lysis syndrome, AKI, or massive cellular release; calcium binders, IV hydration, possible dialysis.",
+          "patient_communication": "Your phosphate level is significantly elevated. Please go to the emergency department for evaluation."
+        }
+      },
+      "sources": ["UpToDate hypo/hyperphosphatemia"]
+    },
+
+    "albumin": {
+      "display_name": "Albumin",
+      "loinc": "1751-7",
+      "synonyms": ["albumin", "alb"],
+      "unit": "g/dL",
+      "kind": "numeric",
+      "trendable": true,
+      "calcium_correction_use": "Used in Ca correction formula: corrected Ca = measured Ca + 0.8 × (4.0 − albumin).",
+      "thresholds": [
+        { "severity": "Severe Low",   "max": 2.5 },
+        { "severity": "Moderate Low", "min": 2.5, "max": 3.0 },
+        { "severity": "Mild Low",     "min": 3.0, "max": 3.5 },
+        { "severity": "Normal",       "min": 3.5, "max": 5.0 },
+        { "severity": "Mild High",    "min": 5.0 }
+      ],
+      "follow_up": {
+        "Severe Low": {
+          "category": "Severe hypoalbuminemia (<2.5 g/dL)",
+          "next_tests": ["Hepatic panel + PT/INR.", "Urine protein/Cr ratio (nephrotic syndrome).", "Stool studies if GI losses suspected.", "Nutritional assessment, prealbumin.", "TSH."],
+          "ehr_plan": "Albumin = {value} g/dL (Severe Low). Plan: workup for cause — chronic liver disease, nephrotic syndrome, protein-losing enteropathy, severe malnutrition, capillary leak. Synthetic function assessment (PT/INR); urine studies; address underlying cause.",
+          "patient_communication": "Your albumin level is significantly low. We will look into the cause, which can include kidney, liver, or nutritional issues. Please come to the clinic for further evaluation."
+        },
+        "Moderate Low": {
+          "category": "Moderate hypoalbuminemia (2.5–2.9 g/dL)",
+          "next_tests": ["Hepatic panel.", "Urine protein.", "Nutritional and inflammatory assessment (CRP)."],
+          "ehr_plan": "Albumin = {value} g/dL (Moderate Low). Plan: workup as above; nutritional optimization; treat underlying cause.",
+          "patient_communication": "Your albumin level is moderately low. We will look into the cause."
+        },
+        "Mild Low": {
+          "category": "Mild hypoalbuminemia (3.0–3.4 g/dL)",
+          "next_tests": ["Hepatic panel.", "Urine albumin.", "Inflammatory markers (CRP)."],
+          "ehr_plan": "Albumin = {value} g/dL (Mild Low). Plan: assess for inflammation, mild malnutrition, early renal/hepatic disease; recheck.",
+          "patient_communication": "Your albumin level is slightly low. We will look into the cause and recheck the level."
+        },
+        "Mild High": {
+          "category": "Hyperalbuminemia (≥5.0 g/dL) — usually dehydration",
+          "next_tests": ["BMP, urine specific gravity.", "Hydration assessment."],
+          "ehr_plan": "Albumin = {value} g/dL (Mild High). Most often relative — assess hydration; recheck after rehydration.",
+          "patient_communication": "Your albumin is slightly high, often from dehydration. Drink fluids and we will recheck."
+        }
+      },
+      "sources": ["UpToDate hypoalbuminemia"]
+    },
+
+    "mcv": {
+      "display_name": "Mean Corpuscular Volume (MCV)",
+      "loinc": "787-2",
+      "synonyms": ["mcv", "mean corpuscular volume"],
+      "unit": "fL",
+      "kind": "numeric",
+      "trendable": false,
+      "interpretation_note": "MCV directs anemia workup: <80 microcytic; 80–100 normocytic; >100 macrocytic. Always interpret with hemoglobin.",
+      "thresholds": [
+        { "severity": "Severe Low",  "max": 70 },
+        { "severity": "Mild Low",    "min": 70,  "max": 80 },
+        { "severity": "Normal",      "min": 80,  "max": 100 },
+        { "severity": "Mild High",   "min": 100, "max": 110 },
+        { "severity": "Severe High", "min": 110 }
+      ],
+      "follow_up": {
+        "Severe Low": {
+          "category": "Severe microcytosis (MCV <70 fL) — concerning for thalassemia",
+          "next_tests": ["Iron studies (Fe, TIBC, ferritin, transferrin sat).", "Hemoglobin electrophoresis.", "RDW.", "Reticulocyte count."],
+          "ehr_plan": "MCV = {value} fL (Severe Low). Plan: iron studies + Hgb electrophoresis; consider thalassemia trait, severe iron deficiency, or anemia of chronic disease.",
+          "patient_communication": "Your red blood cells are unusually small. We will check iron levels and a hemoglobin test to find the cause."
+        },
+        "Mild Low": {
+          "category": "Microcytic anemia workup (MCV 70–79 fL)",
+          "next_tests": ["Iron studies.", "Ferritin.", "If iron normal — Hgb electrophoresis."],
+          "ehr_plan": "MCV = {value} fL (Mild Low). Plan: iron studies; treat iron deficiency if confirmed; consider thalassemia trait.",
+          "patient_communication": "Your red blood cells are smaller than normal, often from iron deficiency. We will check your iron levels."
+        },
+        "Mild High": {
+          "category": "Macrocytic anemia workup (MCV 100–109 fL)",
+          "next_tests": ["B12, folate, methylmalonic acid.", "TSH.", "LFTs.", "Reticulocyte count.", "Alcohol use review."],
+          "ehr_plan": "MCV = {value} fL (Mild High). Plan: B12/folate, TSH, LFTs; alcohol review; medication review (hydroxyurea, methotrexate, AZT, certain anticonvulsants).",
+          "patient_communication": "Your red blood cells are larger than normal. Common causes include B12 or folate deficiency, thyroid disease, or alcohol use. We will check additional tests."
+        },
+        "Severe High": {
+          "category": "Severe macrocytosis (MCV ≥110 fL) — concern for B12/folate deficiency or MDS",
+          "next_tests": ["B12, methylmalonic acid, folate.", "TSH.", "Peripheral smear (hypersegmented neutrophils, oval macrocytes).", "Reticulocyte count.", "If unexplained — hematology referral for MDS workup."],
+          "ehr_plan": "MCV = {value} fL (Severe High). Plan: full macrocytic workup; if B12 <200 pg/mL — replete IM; hematology referral if unexplained or smear abnormal.",
+          "patient_communication": "Your red blood cells are significantly larger than normal. We will check several tests to find the cause and start treatment."
+        }
+      },
+      "sources": ["AAFP anemia evaluation"]
+    },
+
+    "alkaline_phosphatase": {
+      "display_name": "Alkaline Phosphatase",
+      "loinc": "6768-6",
+      "synonyms": ["alkaline phosphatase", "alk phos", "alp"],
+      "unit": "U/L",
+      "kind": "numeric",
+      "trendable": true,
+      "context_note": "ALP elevation may be hepatic (cholestatic) or bony — check GGT to localize: GGT elevated → hepatic; GGT normal → bone or other. Pregnancy and growing children/adolescents have physiologically elevated ALP.",
+      "thresholds": [
+        { "severity": "Normal",        "min": 40,  "max": 130 },
+        { "severity": "Mild High",     "min": 130, "max": 260 },
+        { "severity": "Moderate High", "min": 260, "max": 650 },
+        { "severity": "Severe High",   "min": 650 }
+      ],
+      "follow_up": {
+        "Mild High": {
+          "category": "Mild ALP elevation (1–2× ULN)",
+          "next_tests": ["GGT (localize hepatic vs bone).", "Hepatic panel + bilirubin.", "Repeat ALP."],
+          "ehr_plan": "ALP = {value} U/L (Mild High). Plan: GGT; hepatic panel; if pregnant or adolescent, may be physiologic; recheck in 4–6 weeks.",
+          "patient_communication": "Your alkaline phosphatase is slightly elevated. We will check additional tests to determine if this is from your liver, bones, or another source."
+        },
+        "Moderate High": {
+          "category": "Moderate ALP elevation (2–5× ULN)",
+          "next_tests": ["GGT.", "Hepatic panel + bilirubin.", "RUQ ultrasound (if hepatic pattern).", "Bone-specific workup if GGT normal: vitamin D, calcium, PTH, consider bone scan."],
+          "ehr_plan": "ALP = {value} U/L (Moderate High). GGT [pending/value]. If hepatic pattern (GGT elevated) — RUQ ultrasound, hepatic workup. If bony — vitamin D, Ca, PTH, consider bone disease (Paget's, osteomalacia, mets).",
+          "patient_communication": "Your alkaline phosphatase is moderately elevated. We will check additional tests to find the source."
+        },
+        "Severe High": {
+          "category": "Severe ALP elevation (>5× ULN) — significant cholestasis or bone disease",
+          "next_tests": ["GGT.", "Hepatic panel + bilirubin + PT/INR.", "RUQ ultrasound; consider MRCP.", "If bony — bone scan, oncologic workup."],
+          "ehr_plan": "ALP = {value} U/L (Severe High). Plan: full hepatic workup with imaging; if bony — oncologic workup including bone scan and tumor markers. Hepatology or oncology referral as indicated.",
+          "patient_communication": "Your alkaline phosphatase is significantly elevated. We will work up the cause carefully. Go to the emergency department if you develop yellow skin or eyes, severe abdominal pain, fever with chills, or unusual bleeding."
+        }
+      },
+      "sources": ["AASLD 2017"]
+    },
+
+    "total_bilirubin": {
+      "display_name": "Total Bilirubin",
+      "loinc": "1975-2",
+      "synonyms": ["total bilirubin", "tbili", "bilirubin total", "bilirubin"],
+      "unit": "mg/dL",
+      "kind": "numeric",
+      "trendable": true,
+      "fractionation_note": "Direct bilirubin >0.4 mg/dL or >20% of total suggests conjugated/cholestatic pattern. Indirect/unconjugated suggests hemolysis or Gilbert's.",
+      "thresholds": [
+        { "severity": "Normal",        "max": 1.2 },
+        { "severity": "Mild High",     "min": 1.2, "max": 3.0 },
+        { "severity": "Moderate High", "min": 3.0, "max": 10.0 },
+        { "severity": "Severe High",   "min": 10.0, "max": 20.0 },
+        { "severity": "Critical High", "min": 20.0 }
+      ],
+      "follow_up": {
+        "Mild High": {
+          "category": "Mild hyperbilirubinemia (1.2–2.9 mg/dL)",
+          "next_tests": ["Direct/indirect fractionation.", "Hepatic panel.", "CBC w/ retic, haptoglobin, LDH (hemolysis).", "If unconjugated and otherwise normal — consider Gilbert's syndrome."],
+          "ehr_plan": "TBili = {value} mg/dL (Mild High). Direct/indirect: [pending]. Plan: fractionation; if indirect predominant — hemolysis workup or Gilbert's; if direct — hepatic workup.",
+          "patient_communication": "Your bilirubin is mildly elevated. We will check additional tests to determine the cause."
+        },
+        "Moderate High": {
+          "category": "Moderate hyperbilirubinemia (3.0–9.9 mg/dL) — clinical jaundice usually present",
+          "next_tests": ["Direct/indirect fractionation.", "Hepatic panel + PT/INR.", "RUQ ultrasound.", "Hepatitis panel.", "Hemolysis workup."],
+          "ehr_plan": "TBili = {value} mg/dL (Moderate High). Direct/indirect: [pending]. Plan: imaging if cholestatic; viral hepatitis workup; hemolysis workup if indirect; hepatology referral if persistent or worsening.",
+          "patient_communication": "Your bilirubin is moderately elevated and may be causing yellow color in your skin or eyes. We will check additional tests including an ultrasound. Go to the emergency department if you develop severe abdominal pain, fever with chills, confusion, or unusual bleeding."
+        },
+        "Severe High": {
+          "category": "Severe hyperbilirubinemia (10.0–19.9 mg/dL) — significant hepatic dysfunction or biliary obstruction",
+          "next_tests": ["Stat hepatic panel + PT/INR.", "Direct/indirect fractionation.", "RUQ ultrasound; consider MRCP.", "Viral hepatitis panel.", "Acetaminophen level."],
+          "ehr_plan": "TBili = {value} mg/dL (Severe High). Plan: workup for cause; assess for acute liver failure (encephalopathy, INR >1.5) — if present, refer to ED for transplant-center evaluation. Otherwise — urgent hepatology / GI consultation.",
+          "patient_communication": "Your bilirubin is significantly elevated. Please come to the clinic today, or go to the emergency department if you have confusion, severe abdominal pain, fever, or unusual bleeding."
+        },
+        "Critical High": {
+          "category": "Critical hyperbilirubinemia (≥20 mg/dL) — likely advanced ALF or biliary obstruction",
+          "next_tests": ["Stat hepatic panel + PT/INR.", "Imaging.", "Hepatitis panel.", "Acetaminophen level."],
+          "ehr_plan": "TBili = {value} mg/dL (Critical High). Patient instructed to proceed immediately to the nearest emergency department for evaluation of acute liver failure or major biliary obstruction; transplant-center referral if ALF.",
+          "patient_communication": "Your bilirubin is at a critical level. Please go to the nearest emergency department right now. Do not drive yourself."
+        }
+      },
+      "sources": ["AASLD 2017"]
+    },
+
+    "hba1c": {
+      "display_name": "Hemoglobin A1C",
+      "loinc": "4548-4",
+      "synonyms": ["hba1c", "a1c", "hemoglobin a1c", "glycated hemoglobin", "glycohemoglobin"],
+      "unit": "%",
+      "kind": "numeric",
+      "trendable": true,
+      "thresholds": [
+        { "severity": "Normal",        "max": 5.7 },
+        { "severity": "Mild High",     "min": 5.7, "max": 6.5 },
+        { "severity": "Moderate High", "min": 6.5, "max": 8.0 },
+        { "severity": "Severe High",   "min": 8.0, "max": 12.0 },
+        { "severity": "Critical High", "min": 12.0 }
+      ],
+      "follow_up": {
+        "Mild High": {
+          "category": "Prediabetes (A1C 5.7–6.4%)",
+          "next_tests": ["Fasting glucose or repeat A1C.", "Lipid panel.", "BMI, blood pressure."],
+          "ehr_plan": "A1C = {value}% (Prediabetes). Plan: lifestyle counseling — diet (Mediterranean / low-glycemic), ≥150 min/week activity, weight management; consider metformin per ADA for high-risk (BMI ≥35, age <60, prior GDM); recheck A1C in 6 months.",
+          "patient_communication": "Your A1C is in the prediabetes range. Lifestyle changes are very effective at preventing diabetes. We will discuss diet, activity, and weight management, and recheck the test in 6 months."
+        },
+        "Moderate High": {
+          "category": "Diabetes (A1C 6.5–7.9%)",
+          "next_tests": ["Confirmatory test if new diagnosis.", "Lipid panel.", "Urine albumin/Cr ratio.", "Eye and foot exam scheduling.", "BMP, LFTs."],
+          "ehr_plan": "A1C = {value}% (Diabetes range). Plan: if new diagnosis — diabetes education, baseline labs (lipids, microalbumin), eye and foot exam referrals, lifestyle counseling, initiate metformin per ADA. If established diabetes — review and adjust regimen toward individualized target (commonly <7%).",
+          "patient_communication": "Your A1C is in the diabetes range. We will work together on a treatment plan including diet, activity, and medication. We will also schedule eye and foot exams to protect against complications."
+        },
+        "Severe High": {
+          "category": "Poorly controlled diabetes (A1C 8.0–11.9%)",
+          "next_tests": ["Glucose log review.", "BMP, LFTs.", "Lipid panel.", "Microalbumin, eye/foot screening.", "Assess for symptoms of complications."],
+          "ehr_plan": "A1C = {value}% (Severe High). Plan: intensify regimen per ADA Standards; assess for medication adherence, lifestyle barriers; consider GLP-1 RA or SGLT2i (cardiorenal benefit); endocrinology referral if escalation difficult; complications screening.",
+          "patient_communication": "Your A1C is significantly elevated, meaning your blood sugar has been high for several months. We will adjust your treatment plan together. Watch for increased thirst, urination, blurred vision, slow-healing wounds, or unusual fatigue — call us if these worsen."
+        },
+        "Critical High": {
+          "category": "Critically uncontrolled diabetes (A1C ≥12%)",
+          "next_tests": ["Glucose, ketones, BMP/anion gap.", "Lipid panel.", "Urine albumin/Cr.", "Eye/foot screening.", "Complications panel."],
+          "ehr_plan": "A1C = {value}% (Critical High). Plan: aggressive regimen intensification — likely insulin if not already; rule out DKA (ketones, anion gap) especially in T1D; endocrinology referral; close follow-up; consider hospitalization if symptomatic, ketotic, or unable to manage outpatient.",
+          "patient_communication": "Your A1C is at a critical level. Please come to the clinic this week for a comprehensive plan. Go to the emergency department if you have nausea, vomiting, abdominal pain, rapid breathing, or feel confused — these can be signs of a diabetic emergency."
+        }
+      },
+      "sources": ["ADA Standards of Care 2025/2026"]
+    },
+
+    "tsh": {
+      "display_name": "Thyroid Stimulating Hormone (TSH)",
+      "loinc": "3016-3",
+      "synonyms": ["tsh", "thyroid stimulating hormone", "thyrotropin"],
+      "unit": "mIU/L",
+      "kind": "numeric",
+      "trendable": true,
+      "context_note": "TSH reference is age- and pregnancy-dependent. Pregnancy: 1st tri 0.1–2.5; 2nd 0.2–3.0; 3rd 0.3–3.0. Always interpret with free T4.",
+      "thresholds": [
+        { "severity": "Severe Low",    "max": 0.1 },
+        { "severity": "Mild Low",      "min": 0.1, "max": 0.4 },
+        { "severity": "Normal",        "min": 0.4, "max": 4.0 },
+        { "severity": "Mild High",     "min": 4.0, "max": 10.0 },
+        { "severity": "Moderate High", "min": 10.0, "max": 20.0 },
+        { "severity": "Severe High",   "min": 20.0 }
+      ],
+      "follow_up": {
+        "Severe Low": {
+          "category": "Suppressed TSH (<0.1 mIU/L) — likely overt hyperthyroidism",
+          "next_tests": ["Free T4, free T3.", "TSI / TRAb if Graves' suspected.", "Thyroid uptake scan if etiology unclear.", "ECG (atrial fibrillation risk)."],
+          "ehr_plan": "TSH = {value} mIU/L (Severe Low). Plan: free T4, free T3; assess for Graves' (TRAb), toxic nodule, thyroiditis; if symptomatic (tachycardia, weight loss, tremor, AFib) — beta-blocker; endocrinology referral. If thyroid storm features (hyperthermia, AFib with RVR, altered mentation) — refer to ED.",
+          "patient_communication": "Your thyroid test suggests an overactive thyroid. We will check additional tests and refer you to a specialist. Go to the emergency department if you have very rapid heart rate, high fever, severe agitation, or confusion."
+        },
+        "Mild Low": {
+          "category": "Subclinical hyperthyroidism (TSH 0.1–0.4 mIU/L)",
+          "next_tests": ["Free T4, free T3.", "Repeat TSH in 6–12 weeks.", "If persistent — endocrinology referral."],
+          "ehr_plan": "TSH = {value} mIU/L (Mild Low). Plan: free T4/T3; recheck in 6–12 weeks; treatment depends on T4, age, comorbidities (atrial fibrillation, osteoporosis risk).",
+          "patient_communication": "Your thyroid test is slightly low. We will check additional tests and recheck the level."
+        },
+        "Mild High": {
+          "category": "Subclinical hypothyroidism (TSH 4.0–9.9 mIU/L)",
+          "next_tests": ["Free T4.", "TPO antibodies.", "Repeat TSH in 6–12 weeks.", "Lipid panel."],
+          "ehr_plan": "TSH = {value} mIU/L (Mild High). Plan: free T4; TPO antibodies; recheck. Treatment if symptomatic, TPO+, pregnant/planning pregnancy, or persistent TSH >10.",
+          "patient_communication": "Your thyroid test is slightly high, suggesting a mildly underactive thyroid. We will check additional tests and decide whether treatment is needed."
+        },
+        "Moderate High": {
+          "category": "Overt hypothyroidism (TSH 10–19.9 mIU/L)",
+          "next_tests": ["Free T4.", "TPO antibodies.", "Lipid panel."],
+          "ehr_plan": "TSH = {value} mIU/L (Moderate High). Plan: initiate levothyroxine (typical starting dose ~1.6 mcg/kg, lower in elderly or cardiac disease); recheck TSH in 6–8 weeks.",
+          "patient_communication": "Your thyroid is underactive. We will start a thyroid hormone replacement medication. We will recheck the level in 6–8 weeks to adjust the dose."
+        },
+        "Severe High": {
+          "category": "Severe hypothyroidism (TSH ≥20 mIU/L) — myxedema risk",
+          "next_tests": ["Free T4.", "TPO antibodies.", "BMP (hyponatremia risk).", "Lipid panel.", "If altered mental status, hypothermia, hypotension — myxedema coma workup."],
+          "ehr_plan": "TSH = {value} mIU/L (Severe High). Plan: initiate levothyroxine; close follow-up. If altered mental status, hypothermia, bradycardia, or hyponatremia — refer to ED for evaluation of myxedema coma (IV levothyroxine + hydrocortisone).",
+          "patient_communication": "Your thyroid test shows significantly underactive thyroid. We will start medication. Go to the emergency department if you feel very cold, very sleepy or confused, or have a slow heart rate or trouble breathing."
+        }
+      },
+      "sources": ["ATA hypothyroidism guidelines", "ATA hyperthyroidism guidelines"]
+    },
+
+    "bun": {
+      "display_name": "Blood Urea Nitrogen (BUN)",
+      "loinc": "3094-0",
+      "synonyms": ["bun", "blood urea nitrogen", "urea"],
+      "unit": "mg/dL",
+      "kind": "numeric",
+      "trendable": true,
+      "ratio_note": "BUN/Cr ratio: >20 suggests prerenal azotemia (volume depletion, GI bleed) or high protein load; <10 suggests intrinsic renal disease, malnutrition, or liver disease. Engine should compute BUN/Cr when both available (Phase 3).",
+      "thresholds": [
+        { "severity": "Normal",        "min": 7,  "max": 20 },
+        { "severity": "Mild High",     "min": 20, "max": 40 },
+        { "severity": "Moderate High", "min": 40, "max": 60 },
+        { "severity": "Severe High",   "min": 60, "max": 100 },
+        { "severity": "Critical High", "min": 100 }
+      ],
+      "follow_up": {
+        "Mild High": {
+          "category": "Mildly elevated BUN",
+          "next_tests": ["BMP including Cr (compute BUN/Cr ratio).", "Urinalysis.", "Hydration assessment."],
+          "ehr_plan": "BUN = {value} mg/dL (Mild High). Cr = [value], BUN/Cr = [computed]. Plan: assess hydration, GI bleeding history, protein load, renal function.",
+          "patient_communication": "Your BUN is slightly elevated, often related to dehydration. Drink water normally. We will compare with kidney function."
+        },
+        "Moderate High": {
+          "category": "Moderately elevated BUN",
+          "next_tests": ["BMP, Cr, eGFR.", "Urinalysis, urine albumin.", "Stool occult blood if GI bleed suspected."],
+          "ehr_plan": "BUN = {value} mg/dL (Moderate High). Plan: assess for AKI vs CKD (compare to Cr and baseline); rule out GI bleed; hydration status; recheck.",
+          "patient_communication": "Your BUN is moderately elevated. We will check kidney function and look for the cause."
+        },
+        "Severe High": {
+          "category": "Severe BUN elevation — significant uremia",
+          "next_tests": ["Stat BMP, Cr, K, HCO3.", "Urinalysis.", "GI workup if BUN/Cr >20."],
+          "ehr_plan": "BUN = {value} mg/dL (Severe High). Plan: refer to ED if symptomatic (uremia symptoms, AKI signs, hyperkalemia, acidosis); evaluate for GI bleed and AKI.",
+          "patient_communication": "Your BUN is significantly elevated. Please come to the clinic today, or go to the emergency department if you feel confused, very weak, have decreased urination, swelling, shortness of breath, or any GI bleeding."
+        },
+        "Critical High": {
+          "category": "Critical BUN elevation — uremia / RRT consideration",
+          "next_tests": ["Stat BMP, Cr, K, HCO3.", "Urinalysis.", "Hemoglobin (uremic bleeding)."],
+          "ehr_plan": "BUN = {value} mg/dL (Critical High). Patient instructed to proceed immediately to the nearest emergency department for AKI workup, electrolyte management, and possible renal replacement therapy.",
+          "patient_communication": "Your BUN is at a critical level. Please go to the nearest emergency department right now. Do not drive yourself."
+        }
+      },
+      "sources": ["KDIGO 2024 CKD"]
+    },
+
+    "chloride": {
+      "display_name": "Chloride",
+      "loinc": "2075-0",
+      "synonyms": ["chloride", "cl", "cl-"],
+      "unit": "mEq/L",
+      "kind": "numeric",
+      "trendable": true,
+      "context_note": "Chloride usually parallels sodium. Main interpretive value is in anion gap calculation (Na − Cl − HCO3). Standalone chloride abnormalities rarely trigger acute action.",
+      "thresholds": [
+        { "severity": "Severe Low",    "max": 90 },
+        { "severity": "Mild Low",      "min": 90,  "max": 96 },
+        { "severity": "Normal",        "min": 96,  "max": 106 },
+        { "severity": "Mild High",     "min": 106, "max": 115 },
+        { "severity": "Severe High",   "min": 115 }
+      ],
+      "follow_up": {
+        "Mild Low": {
+          "category": "Mild hypochloremia",
+          "next_tests": ["BMP (Na, HCO3 — assess for metabolic alkalosis pattern)."],
+          "ehr_plan": "Cl = {value} mEq/L (Mild Low). Often accompanies metabolic alkalosis (vomiting, diuretics) or hyponatremia. Address underlying cause.",
+          "patient_communication": "Your chloride is slightly low. We will look at your other electrolyte levels to find the cause."
+        },
+        "Severe Low": {
+          "category": "Severe hypochloremia",
+          "next_tests": ["BMP, ABG.", "Urine Cl.", "Volume status."],
+          "ehr_plan": "Cl = {value} mEq/L (Severe Low). Likely metabolic alkalosis or significant fluid loss. Plan: evaluate cause; saline resuscitation if volume-depleted; treat underlying.",
+          "patient_communication": "Your chloride is significantly low. Please come to the clinic for further evaluation."
+        },
+        "Mild High": {
+          "category": "Mild hyperchloremia",
+          "next_tests": ["BMP (assess HCO3, anion gap).", "Hydration assessment."],
+          "ehr_plan": "Cl = {value} mEq/L (Mild High). Often accompanies non-anion-gap metabolic acidosis (RTA, GI losses, saline). Address underlying cause.",
+          "patient_communication": "Your chloride is slightly elevated. We will look at your other electrolytes."
+        },
+        "Severe High": {
+          "category": "Severe hyperchloremia",
+          "next_tests": ["BMP, anion gap.", "Urinalysis.", "Volume status."],
+          "ehr_plan": "Cl = {value} mEq/L (Severe High). Plan: workup for non-anion-gap acidosis; address cause; recheck.",
+          "patient_communication": "Your chloride is significantly elevated. Please come to the clinic for evaluation."
+        }
+      },
+      "sources": ["UpToDate chloride disorders"]
+    }
+  }
+}
