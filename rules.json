@@ -160,42 +160,83 @@
         { "severity": "Severe High",   "min": 200, "max": 300 },
         { "severity": "Critical High", "min": 300 }
       ],
-      "follow_up": {
-        "Critical Low": {
-          "category": "Severe hypoglycemia (<54 mg/dL) — ADA Level 2/3",
-          "next_tests": ["Fingerstick glucose to confirm.", "BMP, repeat glucose after treatment.", "If recurrent or unexplained: insulin/C-peptide, sulfonylurea screen, AM cortisol."],
-          "ehr_plan": "Glucose = {value} mg/dL (Critical Low). Mental status: [alert/altered/unresponsive]. Treatment: 15 g rapid carbohydrate PO if able, or IV D50 / IM glucagon if unable. Recheck glucose 15 min. If recurrent, no clear cause, or no prior history — refer to ED for evaluation and monitored observation.",
-          "patient_communication": "Your blood sugar is dangerously low. If you can swallow safely, eat or drink something with quick sugar (juice, regular soda, glucose tablets) immediately. If you are confused, very weak, or unable to swallow safely, you or someone with you should call 911 or go to the emergency department now. Bring this notification."
+      "context_policy": "Diabetic context (yes/no) is asked in the patient sidebar. Non-diabetic with hyperglycemia at Moderate High or worse is treated as new-onset diabetes presenting acutely — ED evaluation. Diabetic with hyperglycemia uses anion gap (when available) to determine acuity for DKA risk.",
+      "follow_up_by_context": {
+        "default": {
+          "Critical Low": {
+            "category": "Severe hypoglycemia (<54 mg/dL) — ADA Level 2/3",
+            "next_tests": ["Fingerstick glucose to confirm.", "BMP, repeat glucose after treatment.", "Insulin / C-peptide, sulfonylurea screen, AM cortisol (no diabetes context — workup for cause).", "Consider islet cell tumor, adrenal insufficiency, or factitious cause."],
+            "ehr_plan": "Glucose = {value} mg/dL (Critical Low). Patient is NOT known diabetic — concerning for occult cause (insulinoma, sulfonylurea exposure, adrenal insufficiency, sepsis, hepatic failure). Mental status: [alert/altered/unresponsive]. Treatment: 15 g rapid carbohydrate PO if able, or IV D50 / IM glucagon if unable. Recheck glucose 15 min. Patient instructed to proceed to the nearest emergency department for monitored evaluation and workup of cause.",
+            "patient_communication": "Your blood sugar is dangerously low. Because you are not a known diabetic, this is unusual and we need to find the cause. If you can swallow safely, eat or drink something with quick sugar (juice, regular soda, glucose tablets) immediately. Please go to the nearest emergency department now for evaluation, or call 911 if you are confused, weak, or unable to swallow."
+          },
+          "Severe Low": {
+            "category": "Hypoglycemia (54–69 mg/dL) — non-diabetic",
+            "next_tests": ["Repeat glucose after treatment.", "BMP.", "Insulin / C-peptide if recurrent or unexplained; AM cortisol; TSH; LFTs."],
+            "ehr_plan": "Glucose = {value} mg/dL (Severe Low) in non-diabetic patient. Plan: 15 g fast-acting carbs, recheck glucose in 15 min; if recurrent or unexplained — workup for cause (insulinoma, factitious, adrenal insufficiency, hepatic failure); consider ED referral if symptomatic or recurrent.",
+            "patient_communication": "Your blood sugar is low. Because you are not a known diabetic, we need to look into the cause. Eat or drink 15 grams of fast-acting sugar (juice, glucose tablets) and recheck. Please come to the clinic for further evaluation, or go to the emergency department if you cannot keep your sugar up, feel confused, or have repeated low readings."
+          },
+          "Mild High": {
+            "category": "Impaired fasting glucose / prediabetes (100–125 mg/dL fasting)",
+            "next_tests": ["Confirm fasting status.", "A1C.", "Lipid panel.", "Repeat fasting glucose if not confirmed."],
+            "ehr_plan": "Glucose = {value} mg/dL (Mild High; prediabetes range if fasting). Plan: confirm fasting status; check A1C; lifestyle counseling (diet, weight, ≥150 min/week activity); recheck glucose and A1C in 3–6 months. Consider metformin for high-risk patients per ADA.",
+            "patient_communication": "Your blood sugar is slightly high. This can mean prediabetes. Lifestyle changes (healthy eating, regular activity, weight management) are very effective. We will check a hemoglobin A1C and recheck your sugar in a few months."
+          },
+          "Moderate High": {
+            "category": "Hyperglycemia in diabetes range (126–199 mg/dL) — non-diabetic",
+            "next_tests": ["Stat A1C.", "BMP (anion gap, electrolytes).", "Urine and serum ketones.", "Lipid panel, urine albumin/Cr ratio (new-diabetes baseline)."],
+            "ehr_plan": "Glucose = {value} mg/dL (Moderate High) in patient NOT known diabetic — likely new-onset diabetes presenting acutely. Plan: patient instructed to proceed to the nearest emergency department for evaluation, BMP with anion gap, ketones, and initiation of treatment. New-diabetes baseline labs (A1C, lipids, microalbumin) and education to follow.",
+            "patient_communication": "Your blood sugar is high enough to suggest new diabetes. Because you are not a known diabetic, we need you to be evaluated promptly. Please go to the nearest emergency department today for further testing and to start treatment. Bring this notification with you."
+          },
+          "Severe High": {
+            "category": "Severe hyperglycemia (200–299 mg/dL) — non-diabetic",
+            "next_tests": ["Stat BMP, anion gap.", "Urine and serum ketones / beta-hydroxybutyrate.", "UA, lactate.", "A1C, lipid panel."],
+            "ehr_plan": "Glucose = {value} mg/dL (Severe High) in patient NOT known diabetic — concern for new-onset diabetes presenting acutely with possible DKA/HHS. Patient instructed to proceed immediately to the nearest emergency department for IV fluids, insulin, electrolyte correction, and DKA/HHS workup.",
+            "patient_communication": "Your blood sugar is very high. Because you are not a known diabetic, this is a medical emergency — you may be developing a serious complication of new diabetes. Please go to the nearest emergency department right now. Do not drive yourself — have someone drive you, or call 911."
+          },
+          "Critical High": {
+            "category": "Critical hyperglycemia (≥300 mg/dL) — non-diabetic",
+            "next_tests": ["Stat BMP, anion gap.", "VBG/ABG (pH, bicarbonate).", "Urine and serum ketones / beta-hydroxybutyrate.", "UA, lactate, infection workup if febrile."],
+            "ehr_plan": "Glucose = {value} mg/dL (Critical High) in patient NOT known diabetic — likely new-onset diabetes presenting with DKA / HHS. Patient instructed to proceed immediately to the nearest emergency department for IV fluids, insulin therapy, electrolyte correction, and DKA/HHS workup.",
+            "patient_communication": "Your blood sugar is at a dangerous level. This is a medical emergency. Please go to the nearest emergency department right now. Do not drive yourself — have someone drive you, or call 911."
+          }
         },
-        "Severe Low": {
-          "category": "Hypoglycemia (54–69 mg/dL) — ADA Level 1 alert",
-          "next_tests": ["Repeat glucose after treatment.", "Review diabetes meds (sulfonylureas, insulin) and dosing.", "Consider A1C trend."],
-          "ehr_plan": "Glucose = {value} mg/dL (Severe Low / ADA Level 1). Patient instructed in 15-15 rule (15 g carb, recheck in 15 min). Review and adjust diabetes regimen as indicated. Counsel on hypoglycemia awareness and glucagon prescription if recurrent.",
-          "patient_communication": "Your blood sugar is low. Eat or drink 15 grams of fast-acting sugar (4 oz juice, 3 glucose tablets, or 1 tbsp honey), then recheck your sugar in 15 minutes. We will review your diabetes medications. Call us if this happens again, or go to the emergency department if you cannot keep sugar up or feel confused."
-        },
-        "Mild High": {
-          "category": "Impaired fasting glucose / prediabetes (100–125 mg/dL fasting)",
-          "next_tests": ["Confirm fasting status.", "A1C.", "Lipid panel.", "Repeat fasting glucose if not confirmed."],
-          "ehr_plan": "Glucose = {value} mg/dL (Mild High; prediabetes range if fasting). Plan: confirm fasting status; check A1C; lifestyle counseling (diet, weight, ≥150 min/week activity); recheck glucose and A1C in 3–6 months. Consider metformin for high-risk patients per ADA.",
-          "patient_communication": "Your blood sugar is slightly high. This can mean prediabetes. Lifestyle changes (healthy eating, regular activity, weight management) are very effective. We will check a hemoglobin A1C and recheck your sugar in a few months."
-        },
-        "Moderate High": {
-          "category": "Hyperglycemia in diabetes range (126–199 mg/dL)",
-          "next_tests": ["A1C.", "Confirm fasting status.", "Repeat glucose; consider OGTT.", "Lipid panel, urine albumin/Cr ratio if new diabetes."],
-          "ehr_plan": "Glucose = {value} mg/dL (Moderate High; diabetes range if fasting ≥126). Plan: A1C; confirm with second test; if new diagnosis — initiate diabetes education, lifestyle counseling, and pharmacotherapy per ADA Standards of Care; baseline labs (lipids, microalbumin, eye/foot exam referrals).",
-          "patient_communication": "Your blood sugar is in the diabetes range. We will check a hemoglobin A1C to see your average sugar over the past few months and confirm the diagnosis. If confirmed, we will start a treatment plan together. Watch for symptoms like increased thirst, urination, blurred vision, or unexplained weight loss — call us if these worsen."
-        },
-        "Severe High": {
-          "category": "Severe hyperglycemia (200–299 mg/dL)",
-          "next_tests": ["A1C.", "BMP (anion gap).", "Urine ketones, urinalysis.", "Beta-hydroxybutyrate if any DKA concern."],
-          "ehr_plan": "Glucose = {value} mg/dL (Severe High). Plan: check ketones (urine or serum BHB); BMP for anion gap; if symptoms (polyuria, polydipsia, nausea, abdominal pain, Kussmaul respirations) or ketonemia — refer to ED. Otherwise: hydration, A1C, intensify diabetes regimen, close follow-up.",
-          "patient_communication": "Your blood sugar is significantly elevated. Drink water (not sugary drinks). Please come to the clinic today for further testing. Go to the emergency department right away if you feel nauseated, are vomiting, have abdominal pain, or have rapid breathing — these can be signs of a serious complication."
-        },
-        "Critical High": {
-          "category": "Critical hyperglycemia (≥300 mg/dL) — DKA / HHS concern",
-          "next_tests": ["BMP, anion gap.", "VBG/ABG (pH, bicarbonate).", "Urine and serum ketones / beta-hydroxybutyrate.", "UA, lactate, infection workup if febrile."],
-          "ehr_plan": "Glucose = {value} mg/dL (Critical High). Concerns: DKA / HHS. Patient instructed to proceed immediately to the nearest emergency department for IV fluids, insulin therapy, electrolyte correction, and DKA/HHS workup. Note: euglycemic DKA can occur at glucose <200 mg/dL on SGLT2 inhibitors — assess for acidosis even if glucose lower.",
-          "patient_communication": "Your blood sugar is at a level that can be dangerous, especially if you have signs of a diabetic emergency (nausea, vomiting, belly pain, fast deep breathing, fruity breath, confusion). Please go to the nearest emergency department right now. Do not drive yourself — have someone drive you or call 911."
+        "diabetic": {
+          "Critical Low": {
+            "category": "Severe hypoglycemia (<54 mg/dL) — known diabetic, ADA Level 2/3",
+            "next_tests": ["Fingerstick glucose to confirm.", "Review diabetes regimen — insulin dose/timing, sulfonylurea use, recent meal/activity.", "BMP."],
+            "ehr_plan": "Glucose = {value} mg/dL (Critical Low) in known diabetic. Likely medication-related (insulin, sulfonylurea). Mental status: [alert/altered/unresponsive]. Treatment: 15 g rapid carbohydrate PO if able, or IV D50 / IM glucagon if unable. Hold next dose of suspected medication; review and adjust regimen. Refer to ED if recurrent within 24 h, severe symptoms, or unable to maintain glucose despite repletion.",
+            "patient_communication": "Your blood sugar is dangerously low. If you can swallow safely, eat or drink something with quick sugar (juice, regular soda, glucose tablets) immediately. Hold your next dose of insulin or diabetes pills until we review your regimen. Call us right away. Go to the emergency department or call 911 if you cannot keep your sugar up, feel confused, or have repeated low readings."
+          },
+          "Severe Low": {
+            "category": "Hypoglycemia (54–69 mg/dL) — known diabetic, ADA Level 1 alert",
+            "next_tests": ["Repeat glucose after treatment.", "Review diabetes meds (sulfonylureas, insulin) and dosing, recent meals, activity.", "Consider A1C trend and continuous glucose monitor data."],
+            "ehr_plan": "Glucose = {value} mg/dL (Severe Low / ADA Level 1) in known diabetic. Plan: 15-15 rule (15 g carb, recheck in 15 min). Review and adjust diabetes regimen — likely de-intensify insulin/sulfonylurea. Counsel on hypoglycemia awareness and glucagon prescription if recurrent.",
+            "patient_communication": "Your blood sugar is low. Eat or drink 15 grams of fast-acting sugar (4 oz juice, 3 glucose tablets, or 1 tbsp honey), then recheck your sugar in 15 minutes. We will review your diabetes medications and likely adjust them. Call us if this happens again."
+          },
+          "Mild High": {
+            "category": "Mildly elevated glucose in known diabetic — within typical range for many",
+            "next_tests": ["No urgent action.", "A1C if not recent.", "Continuous glucose data review if available."],
+            "ehr_plan": "Glucose = {value} mg/dL (Mild High) in known diabetic. No urgent intervention. Plan: A1C if not recent; assess overall glycemic control and adjust regimen as appropriate at scheduled visit.",
+            "patient_communication": "Your blood sugar is slightly above target. This is common in diabetes. Continue your usual medications and routine. We will review your A1C and overall control at your next visit."
+          },
+          "Moderate High": {
+            "category": "Hyperglycemia in known diabetic (126–199 mg/dL)",
+            "next_tests": ["A1C.", "Diabetes regimen review (medications, timing, adherence).", "BMP if symptomatic."],
+            "ehr_plan": "Glucose = {value} mg/dL (Moderate High) in known diabetic. Plan: A1C; review diabetes regimen — adherence, dose, timing; lifestyle review; intensify regimen as appropriate per ADA Standards of Care.",
+            "patient_communication": "Your blood sugar is moderately high for someone with diabetes. We will check your A1C and review your medications and routine. Call us if you feel unwell, especially with nausea, vomiting, abdominal pain, or unusual fatigue."
+          },
+          "Severe High": {
+            "category": "Severe hyperglycemia in known diabetic (200–299 mg/dL) — anion-gap-driven acuity",
+            "next_tests": ["Stat BMP with anion gap.", "Urine and serum ketones / beta-hydroxybutyrate.", "VBG if AG elevated.", "UA, infection workup if symptomatic."],
+            "ehr_plan": "Glucose = {value} mg/dL (Severe High) in known diabetic. Anion gap = [computed]. Plan: if AG >12 OR ketones positive OR symptoms (nausea, vomiting, abdominal pain, Kussmaul respirations) — patient instructed to proceed immediately to the nearest emergency department for DKA workup and IV management. If AG normal and asymptomatic — hydration, regimen adjustment, close follow-up; consider sliding-scale insulin and recheck glucose. Note: euglycemic DKA possible on SGLT2i — assess for acidosis even with lower glucose.",
+            "patient_communication": "Your blood sugar is significantly high. Drink water (not sugary drinks). If you feel nauseated, are vomiting, have belly pain, or are breathing rapidly, go to the nearest emergency department right away — these can be signs of diabetic ketoacidosis. Otherwise, please come to the clinic today for further evaluation."
+          },
+          "Critical High": {
+            "category": "Critical hyperglycemia in known diabetic (≥300 mg/dL) — DKA / HHS concern",
+            "next_tests": ["Stat BMP, anion gap.", "VBG/ABG (pH, bicarbonate).", "Urine and serum ketones / beta-hydroxybutyrate.", "UA, lactate, infection workup if febrile."],
+            "ehr_plan": "Glucose = {value} mg/dL (Critical High) in known diabetic. Anion gap = [computed]. Concerns: DKA / HHS. Patient instructed to proceed immediately to the nearest emergency department for IV fluids, insulin therapy, electrolyte correction, and DKA/HHS workup. Note: euglycemic DKA can occur at glucose <200 mg/dL on SGLT2 inhibitors.",
+            "patient_communication": "Your blood sugar is at a level that is dangerous, especially if you have signs of a diabetic emergency (nausea, vomiting, belly pain, fast deep breathing, fruity breath, confusion). Please go to the nearest emergency department right now. Do not drive yourself — have someone drive you, or call 911."
+          }
         }
       },
       "sources": ["ADA Standards of Care 2025/2026", "AAFP"]
@@ -210,17 +251,45 @@
       "trendable": true,
       "trend_note": "When a baseline creatinine is available, prefer KDIGO AKI staging — Stage 1: +0.3 mg/dL within 48 h or 1.5–1.9× baseline within 7 d; Stage 2: 2.0–2.9× baseline; Stage 3: ≥3× baseline, ≥4.0 mg/dL, or RRT initiation. Phase 1 uses the static thresholds below; trend computation is added in Phase 4 timeline UI. When no baseline is known, use the `differentiation` block for AKI vs CKD vs AKI-on-CKD reasoning.",
       "differentiation": {
-        "purpose": "Help the IDC distinguish AKI vs CKD vs AKI-on-CKD when baseline is unknown. Severity tiers (Mild/Moderate/Severe/Critical) below already drive urgency of action; this block guides which workup to pursue.",
-        "render_as": "Interactive checklist in UI — engine should render reasoning_prompts as a questionnaire and surface acute_pattern_features / chronic_pattern_features as a side-by-side comparison.",
-        "reasoning_prompts": [
-          "When was the patient last known to have a normal or baseline creatinine? (Hours–days suggests acute; months–years suggests chronic.)",
-          "Recent acute illness — vomiting, diarrhea, sepsis, hemorrhage, dehydration?",
-          "Recent nephrotoxin exposure — NSAIDs, new or up-titrated ACEi/ARB, IV contrast, aminoglycoside, vancomycin, PPI?",
-          "Obstructive symptoms — anuria, severe flank pain, BPH symptoms, palpable bladder, urinary retention?",
-          "Acute symptoms — decreased urine output, edema, dyspnea, nausea, confusion, asterixis?",
-          "CKD risk factors — hypertension, diabetes, family history of kidney disease, prior abnormal creatinine?",
-          "Chronic findings — anemia, hyperphosphatemia, secondary hyperparathyroidism, small kidneys on prior imaging?"
+        "purpose": "Distinguish AKI vs CKD vs AKI-on-CKD; assign CKD G/A stage (KDIGO) when data permits; recommend chronic CKD lab panel at G3a or worse.",
+        "render_as": "Sidebar inputs — last known creatinine + approximate date + urine albumin/Cr ratio. Engine computes eGFR (CKD-EPI 2021), KDIGO AKI stage if baseline supplied, and CKD G_A_ stage. UI shows computed values + acute/chronic feature reference + workup implications.",
+        "baseline_input": {
+          "last_creatinine_label": "Last known creatinine (mg/dL)",
+          "last_creatinine_help": "Most recent prior creatinine. If supplied, engine computes KDIGO AKI staging.",
+          "last_creatinine_date_label": "Approximate date of last known creatinine",
+          "urine_acr_label": "Urine albumin/creatinine ratio (mg/g)",
+          "urine_acr_help": "If supplied with current Cr + age + sex, engine assigns full CKD G_A_ stage."
+        },
+        "egfr_formula": "CKD-EPI 2021 (no race coefficient). Requires age + sex.",
+        "ckd_g_stages": {
+          "G1": {"min_egfr": 90,                "label": "G1 — eGFR ≥90, normal/high (with markers of kidney damage)"},
+          "G2": {"min_egfr": 60, "max_egfr": 90, "label": "G2 — eGFR 60–89, mildly decreased"},
+          "G3a":{"min_egfr": 45, "max_egfr": 60, "label": "G3a — eGFR 45–59, mildly to moderately decreased"},
+          "G3b":{"min_egfr": 30, "max_egfr": 45, "label": "G3b — eGFR 30–44, moderately to severely decreased"},
+          "G4": {"min_egfr": 15, "max_egfr": 30, "label": "G4 — eGFR 15–29, severely decreased"},
+          "G5": {                "max_egfr": 15, "label": "G5 — eGFR <15, kidney failure"}
+        },
+        "ckd_a_stages": {
+          "A1": {"max_acr": 30,                  "label": "A1 — UACR <30 mg/g, normal to mildly increased"},
+          "A2": {"min_acr": 30, "max_acr": 300,  "label": "A2 — UACR 30–299 mg/g, moderately increased"},
+          "A3": {"min_acr": 300,                  "label": "A3 — UACR ≥300 mg/g, severely increased"}
+        },
+        "chronic_lab_panel_trigger_stage": "G3a",
+        "chronic_lab_panel": [
+          "Hemoglobin (CKD anemia screen)",
+          "Calcium and phosphate",
+          "Intact PTH (iPTH)",
+          "25-OH vitamin D",
+          "Bicarbonate (CKD acidosis)",
+          "Lipid panel",
+          "Urine albumin/creatinine ratio (UACR) — if not done"
         ],
+        "missing_data_guidance": {
+          "no_age_sex": "eGFR cannot be computed without age and sex — set in the patient context sidebar to enable CKD staging.",
+          "no_baseline": "AKI staging cannot be computed without a prior creatinine. If acute presentation is suspected, treat as AKI and obtain prior labs from EHR / outside records.",
+          "no_acr": "CKD A-stage (albuminuria) cannot be assigned without urine albumin/Cr ratio. Order UACR to complete CKD staging.",
+          "all_missing": "If neither baseline Cr nor UACR is available and the presentation could be acute, prioritize AKI workup (UA with microscopy, FENa if needed, renal ultrasound, medication review)."
+        },
         "acute_pattern_features": [
           "Hours-to-days timeline",
           "Recent volume loss, sepsis, or hemorrhage",
@@ -238,9 +307,9 @@
         ],
         "mixed_pattern_note": "AKI-on-CKD = established CKD risk factors PLUS a recent acute trigger. Manage the acute phase as AKI; re-establish CKD baseline after stabilization.",
         "workup_implications": {
-          "acute_pattern": "AKI workup — volume status, urinalysis with microscopy, urine sodium / FENa if pre-renal vs intrinsic uncertain, renal ultrasound if obstruction possible, medication review.",
-          "chronic_pattern": "CKD staging — eGFR (CKD-EPI 2021), urine albumin/Cr ratio, BMP including K and HCO3, CBC (anemia), Ca/P/PTH (mineral bone disease), 25-OH D, lipid panel.",
-          "mixed_pattern": "Both — address AKI urgency first; re-establish CKD baseline once acute issue resolves."
+          "acute_pattern": "AKI workup — volume status, urinalysis with microscopy, urine sodium / FENa if pre-renal vs intrinsic uncertain, renal ultrasound if obstruction possible, medication review (hold nephrotoxins).",
+          "chronic_pattern": "CKD staging — assign G_A_ from eGFR + UACR; at G3a or worse, order chronic CKD lab panel (Hgb, Ca, P, iPTH, 25-OH D, HCO3, lipids, UACR).",
+          "mixed_pattern": "Both — address AKI urgency first; once stabilized, re-establish CKD baseline and stage."
         }
       },
       "thresholds_by_context": {
@@ -587,7 +656,8 @@
       "unit": "U/L",
       "kind": "numeric",
       "trendable": true,
-      "uln_note": "ULN ~33 U/L (women), ~42 U/L (men). Severity tiers below use sex-stratified bands; default uses 42.",
+      "guideline_anchor": "ACG 2017 (Kwo et al.) for evaluation of abnormal liver chemistries; AASLD 2023 (Rinella et al.) for MASLD/MASH nomenclature and FIB-4–first case-finding.",
+      "uln_note": "Lab-reported ULN ~33 U/L (women), ~42 U/L (men) — used for the severity bands below. ACG 2017 notes the *true* healthy ULN is lower (29–33 M / 19–25 F); above the healthy range but below lab ULN warrants attention especially with cardiometabolic risk (MASLD case-finding per AASLD 2023).",
       "thresholds_by_context": {
         "default": [
           { "severity": "Normal",        "max": 42 },
@@ -614,15 +684,15 @@
       "follow_up": {
         "Mild High": {
           "category": "Mild ALT elevation (<3× ULN)",
-          "next_tests": ["Repeat ALT/AST in 2–4 weeks.", "AST/ALT ratio.", "Hepatitis B and C serology.", "Risk factors: alcohol, medications, NAFLD risk (BMI, A1C, lipids).", "If persistent: ultrasound, ferritin, ANA, ceruloplasmin, A1AT."],
-          "ehr_plan": "ALT = {value} U/L (Mild High; <3× ULN). Plan: review meds (acetaminophen, statins, NSAIDs, supplements, alcohol); HBV/HCV serology; metabolic workup (A1C, lipids, BMI); recheck in 2–4 weeks. If persistent — RUQ ultrasound and broader workup.",
-          "patient_communication": "Your liver enzyme is mildly elevated. This is often related to medications, alcohol, weight, or hepatitis. We will check additional tests and recheck the level. Avoid alcohol until the level returns to normal. Tell us about all medications and supplements you take, including over-the-counter pain relievers."
+          "next_tests": ["Repeat ALT/AST in 2–4 weeks to confirm.", "Compute AST/ALT ratio (>2 suggests alcoholic pattern; <1 typical of viral / MASLD).", "Hepatitis B (HBsAg, anti-HBc, anti-HBs) and Hepatitis C (anti-HCV, with HCV RNA if positive).", "Cardiometabolic risk for MASLD case-finding (per AASLD 2023): BMI, A1C, lipid panel, BP.", "Medication review (acetaminophen, statins, NSAIDs, supplements) and alcohol screen (AUDIT-C).", "If persistent ≥6 months OR cardiometabolic risk: FIB-4 score (age, AST, ALT, platelets); RUQ ultrasound.", "Second-tier workup if persistent: ferritin + transferrin saturation (hemochromatosis); ANA / ASMA / IgG (autoimmune hepatitis); ceruloplasmin if age <40 (Wilson's); alpha-1 antitrypsin level."],
+          "ehr_plan": "ALT = {value} U/L (Mild High; <3× lab ULN). Plan: medication and alcohol review; HBV/HCV serology; cardiometabolic workup for MASLD case-finding (BMI, A1C, lipids); recheck ALT/AST in 2–4 weeks. If persistent ≥6 months or cardiometabolic risk — compute FIB-4, RUQ ultrasound; second-tier workup (iron studies, ANA/ASMA/IgG, ceruloplasmin if <40, A1AT).",
+          "patient_communication": "Your liver enzyme is mildly elevated. The most common causes are medication, alcohol, viral hepatitis, or fatty liver disease (now called MASLD — metabolic-associated steatotic liver disease). We will check additional tests and recheck the level in 2–4 weeks. Avoid alcohol; tell us about all medications and supplements (including over-the-counter); aim for healthy weight, blood pressure, and blood sugar."
         },
         "Moderate High": {
           "category": "Moderate ALT elevation (3–10× ULN)",
-          "next_tests": ["Repeat ALT/AST.", "Total/direct bilirubin, ALP, GGT, albumin, PT/INR.", "Viral hepatitis panel (HAV IgM, HBsAg, HBcAb IgM, HCV Ab, HCV RNA).", "RUQ ultrasound.", "Acetaminophen level if any concern.", "Autoimmune workup (ANA, ASMA, anti-LKM, IgG)."],
-          "ehr_plan": "ALT = {value} U/L (Moderate High; 3–10× ULN). Plan: full hepatic panel including coag; viral hepatitis serologies; RUQ ultrasound; medication review (especially acetaminophen, statins, supplements); alcohol cessation; hepatology referral if persistent or any synthetic dysfunction (high INR, low albumin, hypoglycemia, encephalopathy).",
-          "patient_communication": "Your liver enzymes are moderately elevated. We will check additional tests including for hepatitis. Avoid alcohol completely. Stop or limit acetaminophen (Tylenol). Tell us about all medications and supplements. Go to the emergency department if you develop yellow skin or eyes, severe abdominal pain, confusion, or unusual bleeding."
+          "next_tests": ["Repeat ALT/AST.", "Full hepatic panel: total/direct bilirubin, ALP, GGT, albumin, PT/INR.", "Viral hepatitis panel (HAV IgM, HBsAg, anti-HBc IgM, anti-HCV, HCV RNA).", "RUQ ultrasound.", "Acetaminophen level if any ingestion possible.", "Autoimmune workup (ANA, ASMA, anti-LKM, IgG).", "Iron studies (hemochromatosis); ceruloplasmin if age <40 (Wilson's); A1AT level.", "Cardiometabolic workup (A1C, lipids, BMI) and FIB-4 score for MASLD risk stratification."],
+          "ehr_plan": "ALT = {value} U/L (Moderate High; 3–10× ULN). Plan: full hepatic panel including synthetic function; viral hepatitis panel; RUQ ultrasound; second-tier workup (iron studies, autoimmune, ceruloplasmin if <40, A1AT); FIB-4 score and MASLD case-finding; medication and alcohol review; hepatology referral if persistent or synthetic dysfunction (INR >1.5, low albumin, hypoglycemia, encephalopathy).",
+          "patient_communication": "Your liver enzymes are moderately elevated. We will check additional tests including for hepatitis, fatty liver disease (MASLD), and other causes. Avoid alcohol completely. Stop or limit acetaminophen (Tylenol). Tell us about all medications and supplements. Go to the emergency department if you develop yellow skin or eyes, severe abdominal pain, confusion, or unusual bleeding."
         },
         "Severe High": {
           "category": "Severe ALT elevation (>10× ULN) — possible acute hepatitis",
@@ -637,7 +707,7 @@
           "patient_communication": "Your liver enzymes are at a critical level. Please go to the nearest emergency department right now. Do not drive yourself. Tell the ED team about any acetaminophen (Tylenol) use, including in cold/flu medications, and any supplements or alcohol use."
         }
       },
-      "sources": ["AASLD 2017 abnormal liver chemistries", "ACG abnormal liver enzymes guidance"]
+      "sources": ["ACG 2017 (Kwo et al.) Evaluation of Abnormal Liver Chemistries", "AASLD 2023 MASLD Practice Guidance (Rinella et al.)"]
     },
 
     "ast": {
@@ -647,7 +717,8 @@
       "unit": "U/L",
       "kind": "numeric",
       "trendable": true,
-      "uln_note": "ULN ~35 U/L. AST/ALT ratio: >2 suggestive of alcoholic hepatitis; <1 typical of viral or NAFLD.",
+      "guideline_anchor": "ACG 2017 (Kwo et al.); AASLD 2023 (Rinella et al.) for MASLD/MASH.",
+      "uln_note": "ULN ~35 U/L. AST/ALT ratio: >2 suggestive of alcoholic pattern; <1 typical of viral / MASLD pattern.",
       "thresholds_by_context": {
         "default": [
           { "severity": "Normal",        "max": 35 },
@@ -674,15 +745,15 @@
       "follow_up": {
         "Mild High": {
           "category": "Mild AST elevation (<3× ULN)",
-          "next_tests": ["Repeat AST/ALT.", "AST/ALT ratio.", "CK (rule out muscle source).", "HBV/HCV serology.", "Metabolic workup."],
-          "ehr_plan": "AST = {value} U/L (Mild High). AST/ALT ratio = [computed]. Plan: rule out muscle source (CK if isolated AST elevation); HBV/HCV; alcohol/med review; recheck in 2–4 weeks.",
-          "patient_communication": "Your liver enzyme is mildly elevated. We will check related tests and recheck the level. Avoid alcohol. Tell us about all medications and supplements."
+          "next_tests": ["Repeat AST/ALT in 2–4 weeks.", "Compute AST/ALT ratio (>2 alcoholic; <1 viral / MASLD).", "CK (rule out muscle source if isolated AST elevation).", "HBV/HCV serology.", "Cardiometabolic risk for MASLD case-finding (BMI, A1C, lipids, BP).", "Medication and alcohol review.", "If persistent: FIB-4, RUQ ultrasound, second-tier workup (iron studies, ANA/ASMA/IgG, ceruloplasmin if <40, A1AT)."],
+          "ehr_plan": "AST = {value} U/L (Mild High). AST/ALT ratio = [computed]. Plan: rule out muscle source (CK if isolated AST elevation); HBV/HCV; alcohol/medication review; cardiometabolic workup for MASLD; recheck in 2–4 weeks. If persistent — FIB-4 score, RUQ ultrasound, second-tier workup.",
+          "patient_communication": "Your liver enzyme is mildly elevated. Common causes are medication, alcohol, viral hepatitis, fatty liver disease (MASLD), or muscle injury. We will check related tests and recheck the level. Avoid alcohol; tell us about all medications and supplements."
         },
         "Moderate High": {
           "category": "Moderate AST elevation (3–10× ULN)",
-          "next_tests": ["Full hepatic panel + PT/INR.", "Viral hepatitis panel.", "RUQ ultrasound.", "CK if muscle source suspected."],
-          "ehr_plan": "AST = {value} U/L (Moderate High). AST/ALT ratio = [computed]. Plan: full hepatic panel, viral hepatitis serologies, RUQ ultrasound; alcohol cessation; medication review; consider hepatology referral.",
-          "patient_communication": "Your liver enzymes are moderately elevated. We will check for hepatitis and other causes. Avoid alcohol completely. Go to the emergency department if you develop yellow skin or eyes, severe abdominal pain, confusion, or unusual bleeding."
+          "next_tests": ["Full hepatic panel + PT/INR.", "Viral hepatitis panel.", "RUQ ultrasound.", "CK if muscle source suspected.", "Acetaminophen level if any ingestion possible.", "Iron studies, ANA/ASMA/IgG, ceruloplasmin if <40, A1AT.", "Cardiometabolic workup and FIB-4 score for MASLD."],
+          "ehr_plan": "AST = {value} U/L (Moderate High). AST/ALT ratio = [computed]. Plan: full hepatic panel; viral hepatitis serologies; RUQ ultrasound; second-tier workup (iron, autoimmune, ceruloplasmin if <40, A1AT); FIB-4 and MASLD case-finding; alcohol cessation; medication review; consider hepatology referral.",
+          "patient_communication": "Your liver enzymes are moderately elevated. We will check for hepatitis, fatty liver disease (MASLD), and other causes. Avoid alcohol completely. Go to the emergency department if you develop yellow skin or eyes, severe abdominal pain, confusion, or unusual bleeding."
         },
         "Severe High": {
           "category": "Severe AST elevation (>10× ULN) — possible acute hepatitis or rhabdomyolysis",
@@ -697,7 +768,7 @@
           "patient_communication": "Your AST level is at a critical level. Please go to the nearest emergency department right now. Do not drive yourself. Tell the ED team about any acetaminophen use, supplements, alcohol use, recent intense exercise, falls, or muscle injury."
         }
       },
-      "sources": ["AASLD 2017", "ACG"]
+      "sources": ["ACG 2017 (Kwo et al.)", "AASLD 2023 MASLD Practice Guidance (Rinella et al.)"]
     },
 
     "bicarbonate": {
