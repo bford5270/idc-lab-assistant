@@ -368,78 +368,132 @@ def render_session_derived(derived: dict) -> None:
     st.markdown("---")
 
 
+def _build_derived_lines(derived: dict) -> list[str]:
+    """Produce the bulleted lines that go into the Derived Values block of the note."""
+    lines: list[str] = []
+    if derived.get("bun_cr_ratio_interpretation"):
+        lines.append(derived["bun_cr_ratio_interpretation"])
+    if derived.get("anion_gap") is not None:
+        lines.append(f"Anion gap = {derived['anion_gap']} (normal 8–12).")
+    if derived.get("egfr") is not None:
+        ga = derived.get("ckd_ga_stage") or derived.get("ckd_g_stage") or "incomplete data"
+        lines.append(
+            f"eGFR {derived['egfr']} mL/min/1.73 m² (CKD-EPI 2021); CKD stage: {ga}."
+        )
+    if derived.get("kdigo_aki_stage"):
+        lines.append(f"KDIGO AKI staging: {derived['kdigo_aki_stage']}.")
+    return lines
+
+
 def render_combined_session_output(results: list[dict], derived: dict) -> None:
-    valid = [r for r in results if "error" not in r and r.get("follow_up")]
+    valid = [r for r in results if "error" not in r]
     if not valid:
         return
 
     sorted_results = sorted(
         valid, key=lambda r: SEVERITY_PRIORITY.get(r["severity"], 99)
     )
+    abnormal = [r for r in sorted_results if r["severity"] != "Normal" and r.get("follow_up")]
+    normal = [r for r in sorted_results if r["severity"] == "Normal"]
 
-    seen: set[str] = set()
-    combined_orders: list[str] = []
-    for r in sorted_results:
+    # ---- Action items: deduped next_tests + missing-data prompts ----
+    seen_orders: set[str] = set()
+    action_items: list[str] = []
+    for r in abnormal:
         for t in r["follow_up"].get("next_tests", []):
-            if t not in seen:
-                seen.add(t)
-                combined_orders.append(t)
-
-    derived_lines: list[str] = []
-    if derived.get("bun_cr_ratio_interpretation"):
-        derived_lines.append(derived["bun_cr_ratio_interpretation"])
-    if derived.get("anion_gap") is not None:
-        derived_lines.append(f"Anion gap = {derived['anion_gap']} (normal 8–12).")
-    if derived.get("egfr") is not None:
-        ga = derived.get("ckd_ga_stage") or derived.get("ckd_g_stage") or "incomplete data"
-        derived_lines.append(
-            f"eGFR {derived['egfr']} mL/min/1.73 m² (CKD-EPI 2021); CKD stage: {ga}."
-        )
-    if derived.get("kdigo_aki_stage"):
-        derived_lines.append(f"KDIGO AKI staging: {derived['kdigo_aki_stage']}.")
+            if t not in seen_orders:
+                seen_orders.add(t)
+                action_items.append(t)
     if derived.get("missing_for_ckd_staging"):
-        derived_lines.append(
-            "Missing for complete CKD staging: "
-            + ", ".join(derived["missing_for_ckd_staging"])
-            + "."
+        action_items.append(
+            "Document or order to enable complete CKD staging: "
+            + ", ".join(derived["missing_for_ckd_staging"]) + "."
         )
     prevent = derived.get("prevent") or {}
-    if prevent.get("available"):
-        derived_lines.append(
-            f"PREVENT 10-yr risks: ASCVD {prevent['ascvd_10y']}%, total CVD "
-            f"{prevent['cvd_10y']}%, HF {prevent['hf_10y']}% "
-            f"(tier: {prevent['risk_tier']}). {prevent.get('statin_recommendation', '')}"
+    if prevent.get("missing"):
+        action_items.append(
+            "PREVENT 10-yr risk not yet computable — obtain: "
+            + ", ".join(prevent["missing"]) + "."
         )
 
-    ap_lines: list[str] = []
+    # ---- Clinical note ----
+    note_lines: list[str] = ["# Lab Review", ""]
+    note_lines.append("**Values reviewed:** " + "; ".join(
+        f"{r['display_name']} {r['value']} {r['unit']} ({r['severity']})"
+        for r in sorted_results
+    ))
+    note_lines.append("")
+
+    derived_lines = _build_derived_lines(derived)
     if derived_lines:
-        ap_lines.append("# Derived values")
-        ap_lines.extend(derived_lines)
-        ap_lines.append("")
-    for r in sorted_results:
-        ap_lines.append(f"# {r['display_name']} ({r['severity']})")
-        plan = r["follow_up"].get("ehr_plan", "")
-        if plan:
-            ap_lines.append(plan)
-        ap_lines.append("")
+        note_lines.append("## Derived values")
+        for line in derived_lines:
+            note_lines.append(f"- {line}")
+        note_lines.append("")
 
-    pt_lines: list[str] = []
-    for r in sorted_results:
-        pt_lines.append(f"# {r['display_name']}")
-        comm = r["follow_up"].get("patient_communication", "")
-        if comm:
-            pt_lines.append(comm)
+    if prevent.get("available"):
+        note_lines.append("## AHA PREVENT 2023 — 10-year risk")
+        note_lines.append(
+            f"- ASCVD {prevent['ascvd_10y']}%, total CVD {prevent['cvd_10y']}%, "
+            f"HF {prevent['hf_10y']}% — **{prevent['risk_tier']}** tier."
+        )
+        if prevent.get("statin_recommendation"):
+            note_lines.append(f"- {prevent['statin_recommendation']}")
+        note_lines.append("")
+
+    if abnormal:
+        note_lines.append("## Assessment & Plan")
+        note_lines.append("")
+        for r in abnormal:
+            note_lines.append(f"### {r['display_name']} — {r['severity']}")
+            plan = r["follow_up"].get("ehr_plan", "")
+            if plan:
+                note_lines.append(plan)
+            note_lines.append("")
+    else:
+        note_lines.append("## Assessment")
+        note_lines.append("All evaluated labs within normal range. No active issues identified from this panel.")
+        note_lines.append("")
+
+    if normal and abnormal:
+        normal_names = ", ".join(r["display_name"] for r in normal)
+        note_lines.append(f"**Normal:** {normal_names}.")
+
+    # ---- Patient communication ----
+    pt_lines: list[str] = ["# Your lab results", ""]
+    if not abnormal:
+        pt_lines.append("All of the labs we checked are within the normal range. No follow-up needed for these results at this time.")
+    else:
+        pt_lines.append("Here is a summary of your recent labs and what we will do next.")
         pt_lines.append("")
+        for r in abnormal:
+            pt_lines.append(f"## {r['display_name']}")
+            comm = r["follow_up"].get("patient_communication", "")
+            if comm:
+                pt_lines.append(comm)
+            pt_lines.append("")
+        if normal:
+            normal_names = ", ".join(r["display_name"] for r in normal)
+            pt_lines.append(f"**Other labs that were normal:** {normal_names}.")
 
+    # ---- Render: three stacked, always-visible sections ----
     st.markdown("## Session summary (paste-ready)")
-    st.caption("Severity-ordered, deduped. Each tab is a single block ready to copy.")
-    tabs = st.tabs(["Combined order list", "Clinical A/P", "Patient summary"])
-    with tabs[0]:
-        st.code("\n".join(f"- {o}" for o in combined_orders) or "(no orders)", language="markdown")
-    with tabs[1]:
-        st.code("\n".join(ap_lines).strip() or "(no plan)", language="markdown")
-    with tabs[2]:
-        st.code("\n".join(pt_lines).strip() or "(no patient communication)", language="markdown")
+    st.caption(
+        "Three stacked blocks — copy any section using the icon at the top "
+        "right corner of each block."
+    )
+
+    st.markdown("### 1. Action items / orders")
+    if action_items:
+        st.code("\n".join(f"- {item}" for item in action_items), language="markdown")
+    else:
+        st.success("No action items — all labs within normal range.")
+
+    st.markdown("### 2. Clinical note")
+    st.code("\n".join(note_lines).strip(), language="markdown")
+
+    st.markdown("### 3. Patient communication")
+    st.code("\n".join(pt_lines).strip(), language="markdown")
 
 
 # ---------- Top-level rendering ----------
