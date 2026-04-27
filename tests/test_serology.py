@@ -183,3 +183,82 @@ def test_hiv_includes_full_sti_panel_in_positive_pattern(rules):
     plan = r["ehr_plan"].lower()
     for term in ("rpr", "hbv", "hcv", "gc/ct", "trichomonas", "preventive medicine"):
         assert term in plan, f"missing {term} from HIV+ EHR plan"
+
+
+# ---------- Syphilis (reverse sequence) ----------
+
+
+def _syphilis(rules: dict, **markers) -> dict:
+    inputs = {
+        "treponemal_screen": markers.get("treponemal_screen"),
+        "rpr_reactive":      markers.get("rpr_reactive"),
+    }
+    return evaluate_serology("syphilis_serology", inputs, rules)
+
+
+def test_syphilis_non_reactive(rules):
+    r = _syphilis(rules, treponemal_screen=False)
+    assert r["pattern_id"] == "non_reactive"
+
+
+def test_syphilis_active_or_recent(rules):
+    r = _syphilis(rules, treponemal_screen=True, rpr_reactive=True)
+    assert r["pattern_id"] == "active_or_recent"
+    plan = r["ehr_plan"].lower()
+    assert "penicillin" in plan
+    assert "preventive medicine" in plan
+    for term in ("hiv", "hbv", "hcv", "gc/ct", "trichomonas"):
+        assert term in plan
+
+
+def test_syphilis_treponemal_only(rules):
+    """Past treated, very late, or treponemal BFP — needs confirmation."""
+    r = _syphilis(rules, treponemal_screen=True, rpr_reactive=False)
+    assert r["pattern_id"] == "treponemal_only"
+
+
+def test_syphilis_rpr_only_likely_bfp(rules):
+    """RPR+ without treponemal confirmation — likely biological false positive."""
+    r = _syphilis(rules, treponemal_screen=False, rpr_reactive=True)
+    assert r["pattern_id"] == "rpr_only"
+
+
+def test_syphilis_indeterminate_when_screen_only(rules):
+    r = _syphilis(rules, treponemal_screen=True)
+    assert r["pattern_id"] == "indeterminate"
+
+
+# ---------- Hepatitis C ----------
+
+
+def _hcv(rules: dict, **markers) -> dict:
+    inputs = {
+        "anti_hcv": markers.get("anti_hcv"),
+        "hcv_rna":  markers.get("hcv_rna"),
+    }
+    return evaluate_serology("hepatitis_c_serology", inputs, rules)
+
+
+def test_hcv_non_reactive(rules):
+    r = _hcv(rules, anti_hcv=False)
+    assert r["pattern_id"] == "non_reactive"
+
+
+def test_hcv_chronic_active(rules):
+    r = _hcv(rules, anti_hcv=True, hcv_rna=True)
+    assert r["pattern_id"] == "chronic_active"
+    plan = r["ehr_plan"].lower()
+    assert "direct-acting antiviral" in plan or "daa" in plan
+    assert "preventive medicine" in plan
+    for term in ("hiv", "syphilis", "hbv", "gc/ct", "trichomonas"):
+        assert term in plan
+
+
+def test_hcv_resolved(rules):
+    r = _hcv(rules, anti_hcv=True, hcv_rna=False)
+    assert r["pattern_id"] == "resolved"
+
+
+def test_hcv_indeterminate_when_anti_hcv_only(rules):
+    r = _hcv(rules, anti_hcv=True)
+    assert r["pattern_id"] == "indeterminate"

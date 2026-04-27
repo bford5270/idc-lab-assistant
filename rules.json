@@ -1808,6 +1808,164 @@
         "DHHS Adult and Adolescent ARV Guidelines",
         "CDC STI Treatment Guidelines 2021"
       ]
+    },
+
+    "syphilis_serology": {
+      "display_name": "Syphilis (reverse sequence)",
+      "kind": "serology",
+      "inputs": [
+        { "id": "treponemal_screen", "label": "Treponemal screen (EIA / CIA / TP-PA)", "loinc": "47236-6" },
+        { "id": "rpr_reactive",      "label": "Non-treponemal (RPR or VDRL) reactive", "loinc": "20507-0" }
+      ],
+      "patterns": [
+        {
+          "id": "rpr_only",
+          "label": "RPR reactive, treponemal non-reactive — likely RPR false positive (repeat both)",
+          "match": { "treponemal_screen": false, "rpr_reactive": true },
+          "category": "RPR reactive without treponemal confirmation — biological false-positive RPR is common; rule out very early syphilis",
+          "next_tests": [
+            "Repeat treponemal AND RPR in 2–4 weeks — early primary syphilis can show RPR before treponemal seroconversion.",
+            "Review for biological false-positive RPR causes: pregnancy, recent vaccination, autoimmune disease (SLE, antiphospholipid syndrome), IV drug use, viral infection (EBV, HBV, HCV), Lyme, malaria.",
+            "If chancre or other clinical syphilis features — treat empirically and repeat serology.",
+            "Continue full STI panel."
+          ],
+          "ehr_plan": "RPR reactive, treponemal non-reactive — likely biological false-positive RPR (or very early primary syphilis pre-treponemal seroconversion). Plan: repeat both in 2–4 weeks; review BFP causes (pregnancy, vaccination, autoimmune, IV drugs, viral infection, Lyme, malaria); if clinical syphilis — treat empirically and repeat serology; continue full STI panel.",
+          "patient_communication": "Your RPR test (one of two syphilis tests) was positive but the more specific test was negative. Most often this is a false positive caused by something other than syphilis — pregnancy, recent vaccinations, autoimmune disease, or other infections. We will repeat both tests in 2 to 4 weeks to be sure."
+        },
+        {
+          "id": "non_reactive",
+          "label": "Syphilis non-reactive — no infection (or pre-seroconversion)",
+          "match": { "treponemal_screen": false },
+          "category": "Treponemal screen non-reactive — no laboratory evidence of syphilis",
+          "next_tests": [
+            "If recent (<3 months) high-risk exposure or chancre present: repeat treponemal in 4–6 weeks (window period); consider direct detection (darkfield, PCR) if active lesion.",
+            "Continue full STI panel: HIV (4th-gen Ag/Ab), HBV serology, HCV (anti-HCV w/ reflex RNA), GC + CT NAAT all-site, trichomonas if female."
+          ],
+          "ehr_plan": "Treponemal screen non-reactive — no laboratory evidence of syphilis. Plan: if recent exposure or chancre — repeat in 4–6 weeks (consider darkfield / PCR of lesion exudate); continue full STI panel.",
+          "patient_communication": "Your syphilis test is negative. If you may have been exposed in the last few months or have a sore, the test can sometimes miss very recent infection — we will repeat in 4 to 6 weeks. Please complete the rest of the STI testing today."
+        },
+        {
+          "id": "active_or_recent",
+          "label": "Syphilis seropositive (active or recent infection — stage clinically)",
+          "match": { "treponemal_screen": true, "rpr_reactive": true },
+          "category": "Active or recent syphilis — stage by history / exam, treat per CDC",
+          "next_tests": [
+            "Quantitative RPR titer (baseline; track 4-fold drop after treatment).",
+            "Stage by history + exam: primary (chancre), secondary (rash, mucous patches, condyloma lata, generalized lymphadenopathy), early latent (<1 year), late latent (≥1 year or unknown duration), tertiary (gummatous, cardiovascular, late neuro).",
+            "Neuro / ocular / otic exam — if any abnormality, LP for CSF VDRL + cell count + protein (rule out neurosyphilis at any stage).",
+            "HIV (4th-gen Ag/Ab), HBV serology, HCV (anti-HCV with reflex RNA), GC + CT NAAT all exposed sites, trichomonas if female.",
+            "Pregnancy test if reproductive-age female (alters treatment — penicillin is the only acceptable agent; desensitize if PCN-allergic).",
+            "Discuss with preventive medicine for partner notification, public-health reporting (syphilis is reportable in all states), and contact tracing per local policy.",
+            "Treatment per CDC 2021: primary / secondary / early latent — benzathine penicillin G 2.4 million units IM × 1; late latent / unknown duration / tertiary (non-neuro) — 2.4 million units IM weekly × 3; neuro/ocular/otic — aqueous penicillin G IV 18–24 million units/day × 10–14 days."
+          ],
+          "ehr_plan": "Syphilis seropositive — treponemal screen reactive AND RPR reactive (titer pending). Plan: quantitative RPR for baseline titer; stage clinically (primary / secondary / early latent / late or unknown duration / tertiary); neuro / ocular / otic exam — LP if any abnormal finding; full STI co-infection screen (HIV 4th-gen, HBV, HCV w/ RNA, GC/CT NAAT all-site, trichomonas if female); pregnancy test if applicable; preventive medicine consult for partner notification + reporting; treat per CDC 2021 (benzathine penicillin G — single dose for early stages, weekly × 3 for late latent / unknown duration; IV aqueous penicillin G for neuro/ocular/otic). Document RPR for follow-up titer comparison.",
+          "patient_communication": "Your blood test shows syphilis. Syphilis is curable with antibiotics (penicillin shots), but the type and number of doses depends on how long you have had it — we will figure this out today. We will also check for other infections that share the same routes of spread (HIV, hepatitis B and C, gonorrhea, chlamydia) and check your eyes / nervous system / hearing for any signs of advanced disease. The preventive medicine team will help with notifying recent partners — this is required by public health law and is confidential. After treatment, we will check the syphilis test again at 6 and 12 months to make sure the antibiotics worked."
+        },
+        {
+          "id": "treponemal_only",
+          "label": "Treponemal positive, RPR non-reactive — past treated, late, or false-positive treponemal (confirm)",
+          "match": { "treponemal_screen": true, "rpr_reactive": false },
+          "category": "Treponemal positive, RPR non-reactive — past adequately treated syphilis, very late infection, or biological false positive on treponemal test",
+          "next_tests": [
+            "Confirm with a second different treponemal test (e.g. TP-PA if screen was EIA, or vice versa) — biological false positives on a single treponemal test are uncommon but occur.",
+            "Review prior syphilis treatment history (dates, regimen, post-treatment titers) — treponemal antibodies persist for life after treatment.",
+            "Quantitative RPR (document non-reactive baseline).",
+            "If no documented prior treatment — treat empirically as late latent / unknown duration per CDC.",
+            "HIV (4th-gen), HBV serology, HCV (anti-HCV w/ reflex RNA), GC + CT NAAT all-site, trichomonas if female.",
+            "Discuss with preventive medicine if no prior treatment documented (treat as new diagnosis for reporting / partner notification)."
+          ],
+          "ehr_plan": "Treponemal screen reactive, RPR non-reactive. DDx: past adequately treated syphilis, very late infection, or biological false positive on treponemal. Plan: confirmatory second treponemal test (different platform); review prior syphilis treatment history + post-treatment titers; quantitative RPR (document baseline); if no documented prior treatment — treat as late latent / unknown duration per CDC (benzathine penicillin G 2.4 million units IM weekly × 3); full STI co-infection screen; preventive medicine consult if treating as new diagnosis.",
+          "patient_communication": "Your syphilis blood test has a partial positive pattern. This usually means one of three things: you had syphilis in the past and were treated, you have very long-standing syphilis, or the test is a false alarm. We will run a second confirming test and review any past records. If we cannot confirm prior treatment, we will treat you with antibiotic shots to be safe. Please complete the rest of the STI panel today."
+        }
+      ],
+      "fallback": {
+        "id": "indeterminate",
+        "label": "Indeterminate — repeat / complete reverse sequence",
+        "category": "Incomplete syphilis testing",
+        "next_tests": [
+          "Complete reverse-sequence algorithm: treponemal screen → if reactive, reflex non-treponemal (RPR with quantitative titer).",
+          "If treponemal positive and RPR pending — quantitative RPR; manage per the treponemal_only pattern in the meantime."
+        ],
+        "ehr_plan": "Syphilis testing incomplete. Plan: complete reverse-sequence algorithm (treponemal screen → RPR reflex with quantitative titer if treponemal+).",
+        "patient_communication": "We need to complete the syphilis testing before we can interpret the result. We will arrange the follow-up test now."
+      },
+      "sources": [
+        "CDC STI Treatment Guidelines 2021 (with 2024 updates)",
+        "CDC Syphilis Reverse-Sequence Screening (MMWR 2011)"
+      ]
+    },
+
+    "hepatitis_c_serology": {
+      "display_name": "Hepatitis C (anti-HCV + reflex RNA)",
+      "kind": "serology",
+      "inputs": [
+        { "id": "anti_hcv", "label": "Anti-HCV (antibody)",          "loinc": "13955-9" },
+        { "id": "hcv_rna",  "label": "HCV RNA (qualitative detected)", "loinc": "11011-4" }
+      ],
+      "patterns": [
+        {
+          "id": "non_reactive",
+          "label": "Anti-HCV non-reactive — no HCV (or pre-seroconversion)",
+          "match": { "anti_hcv": false },
+          "category": "Anti-HCV non-reactive — no laboratory evidence of HCV",
+          "next_tests": [
+            "If recent (<6 months) exposure: repeat anti-HCV at 6 months (window-period coverage); consider HCV RNA at 4–6 weeks if high suspicion.",
+            "Continue full STI panel: HIV (4th-gen Ag/Ab), syphilis (treponemal + RPR), HBV serology, GC + CT NAAT all-site, trichomonas if female."
+          ],
+          "ehr_plan": "Anti-HCV non-reactive — no laboratory evidence of HCV. Plan: if recent exposure — repeat at 6 months (or HCV RNA at 4–6 weeks if high suspicion); continue full STI panel.",
+          "patient_communication": "Your hepatitis C test is negative. If you may have been exposed in the last 6 months, the test can sometimes miss very recent infection — we will repeat it. Please complete the rest of the STI testing today."
+        },
+        {
+          "id": "chronic_active",
+          "label": "Active HCV infection (anti-HCV+, RNA detected)",
+          "match": { "anti_hcv": true, "hcv_rna": true },
+          "category": "Active HCV infection — link to treatment for direct-acting antivirals (curative)",
+          "next_tests": [
+            "HCV genotype + quantitative viral load (baseline).",
+            "ALT, AST, ALP, total/direct bilirubin, albumin, PT/INR, platelets, CBC.",
+            "FIB-4 score and / or transient elastography for fibrosis stage.",
+            "Hepatitis A immunity (anti-HAV total) and Hepatitis B serology (HBsAg, anti-HBs, anti-HBc total) — vaccinate against HAV and HBV if non-immune.",
+            "HIV (4th-gen Ag/Ab) — co-infection alters management.",
+            "Syphilis (treponemal + RPR), GC + CT NAAT all-site, trichomonas if female.",
+            "Pregnancy test if reproductive-age female.",
+            "HCC screening if cirrhosis: AFP + RUQ ultrasound q6 months.",
+            "Discuss with preventive medicine for partner notification + public-health reporting (acute HCV is reportable; chronic in many jurisdictions).",
+            "Refer to hepatology / ID for direct-acting antiviral (DAA) therapy — most regimens are 8–12 weeks with cure rates >95%."
+          ],
+          "ehr_plan": "Active HCV infection — anti-HCV reactive AND HCV RNA detected. Plan: HCV genotype + quantitative viral load; LFT panel + synthetic function + CBC + platelets; FIB-4 / transient elastography for fibrosis; HAV / HBV serology with vaccination if non-immune; full STI co-infection screen (HIV 4th-gen, syphilis, HBV, GC/CT NAAT all-site, trichomonas if female); pregnancy test if applicable; HCC surveillance if cirrhotic; preventive medicine consult for partner notification + reporting; hepatology / ID referral for direct-acting antiviral therapy (8–12 wk regimens, >95% cure).",
+          "patient_communication": "Your blood test shows active hepatitis C. The good news: hepatitis C is curable with a short course of pills (usually 8 to 12 weeks) that work for more than 95% of patients. We will refer you to a liver or infectious disease specialist to start treatment. We will also test for other infections that can spread the same way (HIV, syphilis, hepatitis B, gonorrhea, chlamydia) and vaccinate you against hepatitis A and B if you are not already immune. The preventive medicine team will help with notifying anyone who may have been exposed. Avoid alcohol and tell your doctor about all medications."
+        },
+        {
+          "id": "resolved",
+          "label": "Resolved past HCV infection (anti-HCV+, RNA not detected)",
+          "match": { "anti_hcv": true, "hcv_rna": false },
+          "category": "Resolved past HCV infection — spontaneous clearance or post-treatment cure",
+          "next_tests": [
+            "Document SVR (sustained virologic response) if post-treatment — repeat HCV RNA in 12 weeks if not yet confirmed.",
+            "If no prior treatment history — confirm with repeat HCV RNA in 6 months (rule out intermittent viremia).",
+            "Continue baseline STI panel (HIV, syphilis, HBV, GC/CT NAAT, trichomonas) — past HCV does not protect against other STIs.",
+            "Counsel: re-infection is possible; continue safe practices."
+          ],
+          "ehr_plan": "Resolved past HCV — anti-HCV reactive, HCV RNA not detected. Plan: confirm SVR with repeat HCV RNA in 12 weeks if post-treatment, or 6 months if spontaneous clearance / unknown; continue full STI panel; counsel on re-infection risk.",
+          "patient_communication": "Your blood test shows you had hepatitis C in the past and your body cleared it (either on its own or after treatment). The hepatitis C virus is no longer detectable. The antibody stays positive for life — that does not mean you still have the infection. You can get hepatitis C again, so continue safe practices. Please complete the rest of the STI panel today."
+        }
+      ],
+      "fallback": {
+        "id": "indeterminate",
+        "label": "Indeterminate — anti-HCV+ awaiting reflex RNA",
+        "category": "Anti-HCV reactive — HCV RNA pending (reflex testing)",
+        "next_tests": [
+          "Order quantitative HCV RNA (reflex from positive anti-HCV) to differentiate active vs resolved infection.",
+          "Continue full STI panel pending HCV RNA result."
+        ],
+        "ehr_plan": "Anti-HCV reactive — HCV RNA pending. Plan: quantitative HCV RNA reflex; manage per chronic_active or resolved pattern based on result; continue full STI panel.",
+        "patient_communication": "Your hepatitis C antibody test was positive, which means you have been exposed at some point. We need to check whether the virus is still in your blood — we will order this test now."
+      },
+      "sources": [
+        "AASLD/IDSA HCV Guidance (current online edition)",
+        "CDC HCV Testing Recommendations (2020 universal screening update)",
+        "CDC STI Treatment Guidelines 2021"
+      ]
     }
   }
 }
