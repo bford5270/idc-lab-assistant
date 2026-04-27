@@ -80,6 +80,21 @@ def render_follow_up(follow_up: dict, slots: dict[str, Any]) -> dict:
     }
 
 
+def pick_follow_up_dict(lab_def: dict, context: dict | None) -> tuple[dict, str | None]:
+    """Pick the follow_up dict (severity -> {category, next_tests, ehr_plan, patient_communication}).
+
+    Returns (follow_up_dict, branch_label). branch_label is the context branch
+    used (e.g. 'diabetic', 'default') or None if the lab uses a single follow_up.
+    """
+    if "follow_up_by_context" in lab_def:
+        fubc = lab_def["follow_up_by_context"]
+        diabetic = (context or {}).get("diabetic")
+        if diabetic is True and "diabetic" in fubc:
+            return fubc["diabetic"], "diabetic"
+        return fubc.get("default", {}), "default"
+    return lab_def.get("follow_up", {}), None
+
+
 def evaluate(
     lab_id: str,
     value: float,
@@ -89,8 +104,8 @@ def evaluate(
     """Evaluate a single lab value and return a structured result.
 
     Result keys: lab_id, display_name, value, unit, severity, follow_up,
-    threshold_used_default, differentiation, thresholds, sources.
-    On unknown lab_id returns {lab_id, value, error}.
+    follow_up_branch, threshold_used_default, differentiation, thresholds,
+    sources. On unknown lab_id returns {lab_id, value, error}.
     """
     lab_def = rules.get("labs", {}).get(lab_id)
     if not lab_def:
@@ -98,7 +113,8 @@ def evaluate(
 
     thresholds, used_default = pick_thresholds(lab_def, context)
     severity = find_severity(value, thresholds)
-    follow_up_def = lab_def.get("follow_up", {}).get(severity)
+    follow_up_dict, branch = pick_follow_up_dict(lab_def, context)
+    follow_up_def = follow_up_dict.get(severity)
 
     slots: dict[str, Any] = {
         "value": value,
@@ -114,10 +130,213 @@ def evaluate(
         "unit": lab_def.get("unit", ""),
         "severity": severity,
         "follow_up": rendered,
+        "follow_up_branch": branch,
         "threshold_used_default": used_default,
         "differentiation": lab_def.get("differentiation"),
         "thresholds": thresholds,
         "sources": lab_def.get("sources", []),
+    }
+
+
+# ---------- Panel-level derived computations ----------
+
+
+def compute_egfr(creatinine: float | None, age: int | None, sex: str | None) -> float | None:
+    """CKD-EPI 2021 eGFR (no race coefficient).
+
+    Requires Cr (mg/dL), age (years), and sex ('female' or 'male'). Returns
+    None if any input is missing or invalid.
+
+    Formula: GFR = 142 × min(Scr/κ, 1)^α × max(Scr/κ, 1)^-1.200
+                   × 0.9938^Age × (1.012 if female else 1.000)
+    where κ = 0.7 (female) or 0.9 (male); α = -0.241 (female) or -0.302 (male).
+    """
+    if creatinine is None or creatinine <= 0:
+        return None
+    if not age or age <= 0:
+        return None
+    if sex not in ("female", "male"):
+        return None
+
+    if sex == "female":
+        kappa, alpha, sex_factor = 0.7, -0.241, 1.012
+    else:
+        kappa, alpha, sex_factor = 0.9, -0.302, 1.000
+
+    cr_kappa = creatinine / kappa
+    egfr = (
+        142
+        * (min(cr_kappa, 1.0) ** alpha)
+        * (max(cr_kappa, 1.0) ** -1.200)
+        * (0.9938 ** age)
+        * sex_factor
+    )
+    return round(egfr, 1)
+
+
+def assign_ckd_g_stage(egfr: float | None) -> str | None:
+    """KDIGO G stage from eGFR (mL/min/1.73 m²)."""
+    if egfr is None:
+        return None
+    if egfr >= 90:
+        return "G1"
+    if egfr >= 60:
+        return "G2"
+    if egfr >= 45:
+        return "G3a"
+    if egfr >= 30:
+        return "G3b"
+    if egfr >= 15:
+        return "G4"
+    return "G5"
+
+
+def assign_ckd_a_stage(acr: float | None) -> str | None:
+    """KDIGO A stage from urine albumin/creatinine ratio (mg/g)."""
+    if acr is None:
+        return None
+    if acr < 30:
+        return "A1"
+    if acr < 300:
+        return "A2"
+    return "A3"
+
+
+def chronic_ckd_labs_indicated(g_stage: str | None) -> bool:
+    """True at G3a or worse — KDIGO recommends starting CKD chronic labs."""
+    return g_stage in {"G3a", "G3b", "G4", "G5"}
+
+
+def compute_kdigo_aki_stage(
+    current_cr: float | None, baseline_cr: float | None
+) -> str | None:
+    """KDIGO 2012 AKI staging based on Cr ratio + absolute change.
+
+    Returns 'Stage 1', 'Stage 2', 'Stage 3', 'No AKI', or None if not computable.
+    Time-window of <48 h (for +0.3 mg/dL) and 7 d (for ratio) is assumed
+    rather than enforced — this is a snapshot calculation, not a longitudinal one.
+    """
+    if current_cr is None or baseline_cr is None or baseline_cr <= 0:
+        return None
+    delta = current_cr - baseline_cr
+    ratio = current_cr / baseline_cr
+    if ratio >= 3.0 or current_cr >= 4.0:
+        return "Stage 3"
+    if ratio >= 2.0:
+        return "Stage 2"
+    if ratio >= 1.5 or delta >= 0.3:
+        return "Stage 1"
+    return "No AKI"
+
+
+def compute_bun_cr_ratio(bun: float | None, cr: float | None) -> float | None:
+    if bun is None or cr is None or cr <= 0:
+        return None
+    return round(bun / cr, 1)
+
+
+def interpret_bun_cr_ratio(ratio: float | None) -> str | None:
+    if ratio is None:
+        return None
+    if ratio > 20:
+        return (
+            f"BUN/Cr ratio {ratio} (>20) — suggestive of prerenal azotemia "
+            "(volume depletion, GI bleed, high protein intake) or postrenal "
+            "obstruction. Consider hydration assessment, stool occult blood, "
+            "and urinalysis."
+        )
+    if ratio < 10:
+        return (
+            f"BUN/Cr ratio {ratio} (<10) — suggestive of intrinsic renal "
+            "disease, malnutrition, low protein intake, or liver disease."
+        )
+    return f"BUN/Cr ratio {ratio} — within normal range (10–20)."
+
+
+def compute_anion_gap(
+    na: float | None, cl: float | None, hco3: float | None
+) -> float | None:
+    """Anion gap = Na − (Cl + HCO3). Normal 8–12."""
+    if na is None or cl is None or hco3 is None:
+        return None
+    return round(na - cl - hco3, 1)
+
+
+def evaluate_panel(
+    lab_inputs: list[tuple[str, float]],
+    rules: dict,
+    context: dict | None = None,
+) -> dict:
+    """Evaluate a list of (lab_id, value) inputs and compute derived values.
+
+    Returns:
+        {
+            "results": [evaluate(...) results, in input order],
+            "derived": {
+                "bun_cr_ratio": float | None,
+                "bun_cr_ratio_interpretation": str | None,
+                "anion_gap": float | None,
+                "egfr": float | None,
+                "egfr_formula": str,
+                "ckd_g_stage": str | None,
+                "ckd_a_stage": str | None,
+                "ckd_ga_stage": str | None,    # 'G3aA2' if both present, else None
+                "kdigo_aki_stage": str | None,
+                "chronic_ckd_labs_indicated": bool,
+                "missing_for_ckd_staging": [str],
+            }
+        }
+    """
+    results = [evaluate(lab_id, value, rules, context) for lab_id, value in lab_inputs]
+    values_by_lab = {
+        r["lab_id"]: r["value"] for r in results if "lab_id" in r and "error" not in r
+    }
+    ctx = context or {}
+
+    bun = values_by_lab.get("bun")
+    cr = values_by_lab.get("creatinine")
+    na = values_by_lab.get("sodium")
+    cl = values_by_lab.get("chloride")
+    hco3 = values_by_lab.get("bicarbonate")
+    age = ctx.get("age")
+    sex = ctx.get("sex")
+    baseline_cr = ctx.get("baseline_creatinine")
+    acr = ctx.get("urine_acr")
+
+    egfr = compute_egfr(cr, age, sex) if cr is not None else None
+    g_stage = assign_ckd_g_stage(egfr)
+    a_stage = assign_ckd_a_stage(acr)
+    ga_stage = (g_stage + a_stage) if (g_stage and a_stage) else None
+    aki_stage = compute_kdigo_aki_stage(cr, baseline_cr) if cr is not None else None
+    bun_cr = compute_bun_cr_ratio(bun, cr)
+    ag = compute_anion_gap(na, cl, hco3)
+
+    missing: list[str] = []
+    if cr is not None:
+        if not age:
+            missing.append("age")
+        if not sex:
+            missing.append("sex")
+        if acr is None:
+            missing.append("urine albumin/creatinine ratio (UACR)")
+        if baseline_cr is None:
+            missing.append("last known (baseline) creatinine")
+
+    return {
+        "results": results,
+        "derived": {
+            "bun_cr_ratio": bun_cr,
+            "bun_cr_ratio_interpretation": interpret_bun_cr_ratio(bun_cr),
+            "anion_gap": ag,
+            "egfr": egfr,
+            "egfr_formula": "CKD-EPI 2021 (no race coefficient)",
+            "ckd_g_stage": g_stage,
+            "ckd_a_stage": a_stage,
+            "ckd_ga_stage": ga_stage,
+            "kdigo_aki_stage": aki_stage,
+            "chronic_ckd_labs_indicated": chronic_ckd_labs_indicated(g_stage),
+            "missing_for_ckd_staging": missing,
+        },
     }
 
 

@@ -11,9 +11,19 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from engine import (
     URGENCY_BY_SEVERITY,
+    assign_ckd_a_stage,
+    assign_ckd_g_stage,
+    chronic_ckd_labs_indicated,
+    compute_anion_gap,
+    compute_bun_cr_ratio,
+    compute_egfr,
+    compute_kdigo_aki_stage,
     evaluate,
+    evaluate_panel,
     find_severity,
+    interpret_bun_cr_ratio,
     load_rules,
+    pick_follow_up_dict,
     pick_thresholds,
     render_follow_up,
     render_template,
@@ -167,8 +177,14 @@ def test_evaluate_unknown_lab_returns_error(rules):
 
 def test_evaluate_creatinine_includes_differentiation(rules):
     result = evaluate("creatinine", 2.5, rules, {"sex": "male"})
-    assert result["differentiation"] is not None
-    assert len(result["differentiation"]["reasoning_prompts"]) >= 1
+    diff = result["differentiation"]
+    assert diff is not None
+    # New schema: baseline_input + CKD stage definitions, not reasoning_prompts.
+    assert "baseline_input" in diff
+    assert "ckd_g_stages" in diff
+    assert "ckd_a_stages" in diff
+    assert "chronic_lab_panel" in diff
+    assert diff["chronic_lab_panel_trigger_stage"] == "G3a"
 
 
 def test_evaluate_hemoglobin_default_flagged_when_no_sex(rules):
@@ -234,8 +250,259 @@ def test_every_threshold_has_severity(rules):
 
 
 def test_every_severity_in_follow_up_is_valid(rules):
-    """Severity keys in follow_up must be in the canonical ladder."""
+    """Severity keys in follow_up (and follow_up_by_context branches) must be in the canonical ladder."""
     valid = set(URGENCY_BY_SEVERITY.keys())
     for lab_id, lab_def in rules["labs"].items():
         for severity in lab_def.get("follow_up", {}):
             assert severity in valid, f"{lab_id} has unexpected severity {severity!r}"
+        for branch_name, branch in lab_def.get("follow_up_by_context", {}).items():
+            for severity in branch:
+                assert severity in valid, (
+                    f"{lab_id}.follow_up_by_context.{branch_name} has unexpected severity {severity!r}"
+                )
+
+
+# ---------- pick_follow_up_dict (context branching) ----------
+
+
+def test_pick_follow_up_dict_static(rules):
+    lab = rules["labs"]["potassium"]
+    fu, branch = pick_follow_up_dict(lab, None)
+    assert fu is lab["follow_up"]
+    assert branch is None
+
+
+def test_pick_follow_up_dict_diabetic_branch(rules):
+    lab = rules["labs"]["glucose"]
+    fu, branch = pick_follow_up_dict(lab, {"diabetic": True})
+    assert branch == "diabetic"
+    assert "Severe High" in fu
+
+
+def test_pick_follow_up_dict_non_diabetic_branch(rules):
+    lab = rules["labs"]["glucose"]
+    fu, branch = pick_follow_up_dict(lab, {"diabetic": False})
+    assert branch == "default"
+
+
+def test_pick_follow_up_dict_no_diabetic_context_uses_default(rules):
+    lab = rules["labs"]["glucose"]
+    fu, branch = pick_follow_up_dict(lab, None)
+    assert branch == "default"
+
+
+def test_glucose_severe_high_non_diabetic_categorized_as_new_dm(rules):
+    """Per IDC policy: non-diabetic with Severe High = ED for possible new DKA/HHS."""
+    result = evaluate("glucose", 250, rules, {"diabetic": False})
+    assert result["follow_up_branch"] == "default"
+    assert "non-diabetic" in result["follow_up"]["category"].lower()
+
+
+def test_glucose_severe_high_diabetic_anion_gap_driven(rules):
+    """Per IDC policy: known diabetic with Severe High routes via anion gap."""
+    result = evaluate("glucose", 250, rules, {"diabetic": True})
+    assert result["follow_up_branch"] == "diabetic"
+    assert "anion gap" in result["follow_up"]["ehr_plan"].lower()
+
+
+# ---------- compute_egfr (CKD-EPI 2021) ----------
+
+
+def test_egfr_returns_none_when_inputs_missing():
+    assert compute_egfr(None, 50, "male") is None
+    assert compute_egfr(1.0, None, "male") is None
+    assert compute_egfr(1.0, 50, None) is None
+    assert compute_egfr(0, 50, "male") is None
+    assert compute_egfr(1.0, 0, "male") is None
+
+
+def test_egfr_female_typical():
+    """50yo female, Cr 1.0 — published reference checks ~71 mL/min/1.73 m²."""
+    egfr = compute_egfr(1.0, 50, "female")
+    assert egfr is not None
+    assert 65 < egfr < 80
+
+
+def test_egfr_male_typical():
+    """50yo male, Cr 1.0 — published reference ~95 mL/min/1.73 m²."""
+    egfr = compute_egfr(1.0, 50, "male")
+    assert egfr is not None
+    assert 88 < egfr < 100
+
+
+def test_egfr_female_higher_than_male_at_same_cr_age():
+    """At same Cr/age, CKD-EPI 2021 yields higher eGFR for males.
+
+    The female sex factor of 1.012 is a small offset on top of different
+    kappa/alpha. At Cr ≥ 0.7 (above κ_female) females actually compute lower.
+    """
+    f = compute_egfr(1.2, 55, "female")
+    m = compute_egfr(1.2, 55, "male")
+    assert f < m  # at Cr above female κ, males have higher eGFR
+
+
+# ---------- assign_ckd_g_stage ----------
+
+
+def test_ckd_g_stage_boundaries():
+    assert assign_ckd_g_stage(120) == "G1"
+    assert assign_ckd_g_stage(90) == "G1"
+    assert assign_ckd_g_stage(89.9) == "G2"
+    assert assign_ckd_g_stage(60) == "G2"
+    assert assign_ckd_g_stage(59.9) == "G3a"
+    assert assign_ckd_g_stage(45) == "G3a"
+    assert assign_ckd_g_stage(44.9) == "G3b"
+    assert assign_ckd_g_stage(30) == "G3b"
+    assert assign_ckd_g_stage(29.9) == "G4"
+    assert assign_ckd_g_stage(15) == "G4"
+    assert assign_ckd_g_stage(14.9) == "G5"
+    assert assign_ckd_g_stage(0) == "G5"
+
+
+def test_ckd_g_stage_none_for_missing():
+    assert assign_ckd_g_stage(None) is None
+
+
+# ---------- assign_ckd_a_stage ----------
+
+
+def test_ckd_a_stage_boundaries():
+    assert assign_ckd_a_stage(0) == "A1"
+    assert assign_ckd_a_stage(29.9) == "A1"
+    assert assign_ckd_a_stage(30) == "A2"
+    assert assign_ckd_a_stage(299.9) == "A2"
+    assert assign_ckd_a_stage(300) == "A3"
+    assert assign_ckd_a_stage(1000) == "A3"
+
+
+def test_ckd_a_stage_none_for_missing():
+    assert assign_ckd_a_stage(None) is None
+
+
+# ---------- chronic_ckd_labs_indicated ----------
+
+
+def test_chronic_ckd_labs_only_at_g3a_or_worse():
+    assert not chronic_ckd_labs_indicated("G1")
+    assert not chronic_ckd_labs_indicated("G2")
+    assert chronic_ckd_labs_indicated("G3a")
+    assert chronic_ckd_labs_indicated("G3b")
+    assert chronic_ckd_labs_indicated("G4")
+    assert chronic_ckd_labs_indicated("G5")
+    assert not chronic_ckd_labs_indicated(None)
+
+
+# ---------- compute_kdigo_aki_stage ----------
+
+
+def test_aki_stage_3_by_ratio():
+    assert compute_kdigo_aki_stage(3.5, 1.0) == "Stage 3"
+
+
+def test_aki_stage_3_by_absolute():
+    assert compute_kdigo_aki_stage(4.0, 2.0) == "Stage 3"
+
+
+def test_aki_stage_2_by_ratio():
+    assert compute_kdigo_aki_stage(2.0, 1.0) == "Stage 2"
+
+
+def test_aki_stage_1_by_ratio():
+    assert compute_kdigo_aki_stage(1.5, 1.0) == "Stage 1"
+
+
+def test_aki_stage_1_by_delta():
+    """Delta ≥ 0.3 mg/dL with ratio < 1.5 should land in Stage 1."""
+    # Cr 1.4, baseline 1.0: delta 0.4, ratio 1.4 — delta path triggers Stage 1.
+    assert compute_kdigo_aki_stage(1.4, 1.0) == "Stage 1"
+
+
+def test_aki_no_aki_below_thresholds():
+    assert compute_kdigo_aki_stage(1.05, 1.0) == "No AKI"
+
+
+def test_aki_none_when_baseline_missing():
+    assert compute_kdigo_aki_stage(2.0, None) is None
+    assert compute_kdigo_aki_stage(2.0, 0) is None
+
+
+# ---------- BUN/Cr ratio ----------
+
+
+def test_bun_cr_ratio_basic():
+    assert compute_bun_cr_ratio(20, 1.0) == 20.0
+    assert compute_bun_cr_ratio(30, 1.5) == 20.0
+
+
+def test_bun_cr_ratio_none_for_missing():
+    assert compute_bun_cr_ratio(None, 1.0) is None
+    assert compute_bun_cr_ratio(20, None) is None
+    assert compute_bun_cr_ratio(20, 0) is None
+
+
+def test_bun_cr_interpretation_high():
+    text = interpret_bun_cr_ratio(25.0)
+    assert text and "prerenal" in text.lower()
+
+
+def test_bun_cr_interpretation_low():
+    text = interpret_bun_cr_ratio(8.0)
+    assert text and "intrinsic" in text.lower()
+
+
+def test_bun_cr_interpretation_normal():
+    text = interpret_bun_cr_ratio(15.0)
+    assert text and "normal" in text.lower()
+
+
+def test_bun_cr_interpretation_none():
+    assert interpret_bun_cr_ratio(None) is None
+
+
+# ---------- anion gap ----------
+
+
+def test_anion_gap_basic():
+    assert compute_anion_gap(140, 100, 24) == 16
+
+
+def test_anion_gap_returns_none_for_missing():
+    assert compute_anion_gap(None, 100, 24) is None
+    assert compute_anion_gap(140, None, 24) is None
+    assert compute_anion_gap(140, 100, None) is None
+
+
+# ---------- evaluate_panel ----------
+
+
+def test_evaluate_panel_returns_results_and_derived(rules):
+    panel = evaluate_panel(
+        [("creatinine", 2.0), ("bun", 40), ("sodium", 140), ("chloride", 100), ("bicarbonate", 20)],
+        rules,
+        {"sex": "male", "age": 60, "baseline_creatinine": 1.0, "urine_acr": 50, "diabetic": True},
+    )
+    assert len(panel["results"]) == 5
+    d = panel["derived"]
+    assert d["bun_cr_ratio"] == 20.0
+    assert d["anion_gap"] == 20
+    assert d["egfr"] is not None
+    assert d["ckd_g_stage"] is not None
+    assert d["ckd_a_stage"] == "A2"
+    assert d["ckd_ga_stage"] is not None
+    assert d["kdigo_aki_stage"] == "Stage 2"
+    assert d["chronic_ckd_labs_indicated"] is True
+
+
+def test_evaluate_panel_missing_data_listed_when_cr_present(rules):
+    panel = evaluate_panel(
+        [("creatinine", 1.5)], rules, {"sex": "male", "age": 50}
+    )
+    assert "urine albumin/creatinine ratio (UACR)" in panel["derived"]["missing_for_ckd_staging"]
+    assert "last known (baseline) creatinine" in panel["derived"]["missing_for_ckd_staging"]
+
+
+def test_evaluate_panel_no_derived_when_cr_absent(rules):
+    panel = evaluate_panel([("potassium", 5.0)], rules, None)
+    assert panel["derived"]["egfr"] is None
+    assert panel["derived"]["bun_cr_ratio"] is None
+    assert panel["derived"]["anion_gap"] is None
