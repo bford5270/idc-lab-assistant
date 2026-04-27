@@ -205,6 +205,59 @@ def evaluate(
     }
 
 
+# ---------- Serology / qualitative interpreters ----------
+
+
+def evaluate_serology(
+    lab_id: str, inputs: dict, rules: dict
+) -> dict:
+    """Match boolean serology marker inputs to a labelled clinical pattern.
+
+    Patterns in rules.json are listed in match-priority order. For each
+    pattern, all marker keys in `match` must equal the input value; markers
+    not in `match` are wildcards. Inputs may be True, False, or None
+    (None = not done, treats the marker as wildcard for matching).
+
+    On no pattern match, returns the lab's `fallback` block (typically
+    "indeterminate"). The result also lists any markers that were left
+    None so the UI can prompt the IDC to fill them in.
+    """
+    lab_def = rules.get("labs", {}).get(lab_id)
+    if not lab_def or lab_def.get("kind") != "serology":
+        return {
+            "lab_id": lab_id,
+            "error": f"Not a serology lab: {lab_id}",
+        }
+
+    expected_inputs = [i["id"] for i in lab_def.get("inputs", [])]
+    missing = [i for i in expected_inputs if inputs.get(i) is None]
+
+    matched = None
+    for pattern in lab_def.get("patterns", []):
+        constraints = pattern.get("match", {})
+        if all(inputs.get(k) == v for k, v in constraints.items()):
+            matched = pattern
+            break
+
+    if matched is None:
+        matched = lab_def.get("fallback", {"id": "indeterminate", "label": "Indeterminate"})
+
+    return {
+        "lab_id": lab_id,
+        "kind": "serology",
+        "display_name": lab_def.get("display_name", lab_id),
+        "pattern_id": matched.get("id"),
+        "pattern_label": matched.get("label"),
+        "category": matched.get("category"),
+        "next_tests": matched.get("next_tests", []),
+        "ehr_plan": matched.get("ehr_plan", ""),
+        "patient_communication": matched.get("patient_communication", ""),
+        "missing_inputs": missing,
+        "inputs": dict(inputs),
+        "sources": lab_def.get("sources", []),
+    }
+
+
 # ---------- Panel-level derived computations ----------
 
 

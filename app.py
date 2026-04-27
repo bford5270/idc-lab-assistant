@@ -15,6 +15,7 @@ from engine import (
     SEVERITY_COLORS,
     URGENCY_BY_SEVERITY,
     evaluate_panel,
+    evaluate_serology,
     load_rules,
 )
 from lab_parser import parse_text
@@ -150,10 +151,11 @@ with st.sidebar:
 
 # ---------- Input modes ----------
 
-tab_manual, tab_paste, tab_shot = st.tabs(
-    ["Manual entry", "Paste lab text", "Upload screenshot"]
+tab_manual, tab_paste, tab_shot, tab_sero = st.tabs(
+    ["Manual entry", "Paste lab text", "Upload screenshot", "Serology"]
 )
 panel_result: dict | None = None
+serology_result: dict | None = None
 
 with tab_manual:
     cols = st.columns([2, 1])
@@ -262,6 +264,53 @@ with tab_shot:
                 panel_result = evaluate_panel(inputs, rules, context)
             else:
                 st.warning("Add at least one lab + value before evaluating.")
+
+
+_SEROLOGY_LABS = {
+    lab_id: lab_def
+    for lab_id, lab_def in rules["labs"].items()
+    if lab_def.get("kind") == "serology"
+}
+
+
+def _to_bool(state: str) -> bool | None:
+    if state == "Positive":
+        return True
+    if state == "Negative":
+        return False
+    return None
+
+
+with tab_sero:
+    if not _SEROLOGY_LABS:
+        st.info("No serology panels configured.")
+    else:
+        sero_lab_id = st.selectbox(
+            "Serology panel",
+            options=sorted(_SEROLOGY_LABS.keys()),
+            format_func=lambda lid: _SEROLOGY_LABS[lid]["display_name"],
+            key="sero_lab",
+        )
+        sero_def = _SEROLOGY_LABS[sero_lab_id]
+        st.caption(
+            "Set each marker to Positive, Negative, or leave at — for "
+            "Not done. The engine matches the most specific named pattern; "
+            "missing markers are surfaced in the result."
+        )
+
+        sero_inputs: dict = {}
+        cols = st.columns(min(len(sero_def["inputs"]), 4))
+        for i, marker in enumerate(sero_def["inputs"]):
+            choice = cols[i % len(cols)].selectbox(
+                marker["label"],
+                options=["—", "Positive", "Negative"],
+                index=0,
+                key=f"sero_{sero_lab_id}_{marker['id']}",
+            )
+            sero_inputs[marker["id"]] = _to_bool(choice)
+
+        if st.button("Interpret", key="sero_eval"):
+            serology_result = evaluate_serology(sero_lab_id, sero_inputs, rules)
 
 
 # ---------- Rendering helpers ----------
@@ -680,6 +729,44 @@ def render_combined_session_output(results: list[dict], derived: dict) -> None:
     st.code("\n".join(pt_lines).strip(), language="markdown")
 
 
+def render_serology_result(result: dict) -> None:
+    if "error" in result:
+        st.error(result["error"])
+        return
+
+    st.markdown(f"### {result['display_name']}: {result['pattern_label']}")
+
+    if result.get("missing_inputs"):
+        st.warning(
+            "Marker(s) not done: "
+            + ", ".join(result["missing_inputs"])
+            + ". Pattern is the best match given the available markers — "
+            "fill in the missing markers for a definitive interpretation."
+        )
+
+    if result.get("category"):
+        st.markdown(f"**Category:** {result['category']}")
+
+    if result.get("next_tests"):
+        st.markdown("**Next tests / workup:**")
+        for t in result["next_tests"]:
+            st.markdown(f"- {t}")
+
+    if result.get("ehr_plan"):
+        st.markdown("**EHR plan (paste-ready):**")
+        st.code(result["ehr_plan"], language="markdown")
+
+    if result.get("patient_communication"):
+        st.markdown("**Patient communication (paste-ready):**")
+        st.code(result["patient_communication"], language="markdown")
+
+    if result.get("sources"):
+        with st.expander("Sources"):
+            st.markdown(", ".join(result["sources"]))
+
+    st.markdown("---")
+
+
 # ---------- Top-level rendering ----------
 
 if panel_result:
@@ -690,3 +777,6 @@ if panel_result:
     for r in results:
         render_result(r, derived)
     render_combined_session_output(results, derived)
+
+if serology_result:
+    render_serology_result(serology_result)

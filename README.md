@@ -137,13 +137,20 @@ demos with synthetic data but is not appropriate for real clinical use.
   (80–100) / macrocytic (>100) and surfaces pattern-specific workup
   (iron studies for micro; reticulocyte + smear for normo;
   B12/folate/TSH for macro).
+- Hepatitis B serology interpreter: 4-marker form (HBsAg / anti-HBs /
+  anti-HBc total / IgM) → matches one of seven named patterns
+  (acute, chronic, window period, resolved, vaccinated, lone
+  anti-HBc, susceptible) with paste-ready EHR plan and patient
+  communication per CDC and AASLD 2018 guidance. Establishes the
+  qualitative-interpreter scaffolding (`kind: "serology"` schema +
+  `evaluate_serology` engine function + Serology tab) that the
+  remaining Phase 3 interpreters reuse.
 
 **Phase 2 — closed.** Pregnancy and age-adjusted thresholds shipped
 above. Future per-lab context expansions (pediatric ALP, sex/age PSA
 bands, etc.) live in Phase 3 alongside the qualitative interpreters.
 
 **Phase 3 — qualitative interpreters + panel patterns:**
-- Hep B serology (HBsAg / anti-HBs / anti-HBc / IgM).
 - Syphilis sequence (treponemal / non-treponemal RPR titer).
 - HIV reactive flow (4th-gen Ag/Ab → confirmatory).
 - TB PPD risk-stratified induration cutoffs.

@@ -242,6 +242,10 @@ def test_urgency_map_covers_all_ladder_levels():
 def test_all_labs_have_required_fields(rules):
     for lab_id, lab_def in rules["labs"].items():
         assert "display_name" in lab_def, f"{lab_id} missing display_name"
+        if lab_def.get("kind") == "serology":
+            assert "inputs" in lab_def, f"{lab_id} (serology) missing inputs"
+            assert "patterns" in lab_def, f"{lab_id} (serology) missing patterns"
+            continue
         assert "synonyms" in lab_def, f"{lab_id} missing synonyms"
         assert "unit" in lab_def, f"{lab_id} missing unit"
         assert "thresholds" in lab_def or "thresholds_by_context" in lab_def, \
@@ -250,6 +254,8 @@ def test_all_labs_have_required_fields(rules):
 
 def test_every_threshold_has_severity(rules):
     for lab_id, lab_def in rules["labs"].items():
+        if lab_def.get("kind") == "serology":
+            continue
         if "thresholds" in lab_def:
             for t in lab_def["thresholds"]:
                 assert "severity" in t, f"{lab_id} threshold missing severity"

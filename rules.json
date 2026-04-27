@@ -1586,6 +1586,134 @@
         }
       },
       "sources": ["2026 ACC/AHA Dyslipidemia Guideline"]
+    },
+
+    "hepatitis_b_serology": {
+      "display_name": "Hepatitis B Serology",
+      "kind": "serology",
+      "inputs": [
+        { "id": "hbsag",          "label": "HBsAg (surface antigen)",          "loinc": "5195-3" },
+        { "id": "anti_hbs",       "label": "Anti-HBs (surface antibody)",      "loinc": "10900-9" },
+        { "id": "anti_hbc_total", "label": "Anti-HBc total (core antibody)",   "loinc": "13952-6" },
+        { "id": "anti_hbc_igm",   "label": "Anti-HBc IgM",                     "loinc": "31204-1" }
+      ],
+      "patterns": [
+        {
+          "id": "acute_infection",
+          "label": "Acute hepatitis B infection",
+          "match": { "hbsag": true, "anti_hbs": false, "anti_hbc_total": true, "anti_hbc_igm": true },
+          "category": "Acute HBV infection — high infectivity, monitor for chronicity",
+          "next_tests": [
+            "HBV DNA (viral load).",
+            "HBeAg, anti-HBe (replication markers).",
+            "ALT, AST, total/direct bilirubin, ALP, albumin, PT/INR (synthetic function).",
+            "Full STI panel given shared transmission risk: HIV (4th-gen Ag/Ab), syphilis (RPR + treponemal), HCV (anti-HCV with reflex RNA), gonorrhea + chlamydia NAAT (urine and any exposed site), trichomonas if female.",
+            "Discuss with preventive medicine for partner notification, public-health reporting, and exposure / contact tracing per local policy.",
+            "Hepatology referral; counsel on infectivity, household / sexual contact testing and post-exposure prophylaxis (HBIG + vaccination per CDC)."
+          ],
+          "ehr_plan": "Hep B serology consistent with acute HBV infection (HBsAg+, anti-HBc total+, anti-HBc IgM+, anti-HBs−). Plan: HBV DNA, HBeAg/anti-HBe; LFTs + synthetic function; full STI co-infection screen (HIV 4th-gen Ag/Ab, RPR + treponemal, HCV w/ reflex RNA, GC/CT NAAT, trichomonas if female); preventive medicine consult for partner notification + public-health reporting + exposure tracing; counsel on transmission risk; household / sexual contact testing with HBIG + vaccination per CDC; hepatology referral. If signs of acute liver failure (encephalopathy, INR >1.5) — proceed immediately to ED for transplant-center evaluation.",
+          "patient_communication": "Your blood test shows an acute (recent) hepatitis B infection. Most adults clear this on their own within 6 months, but we need to monitor your liver function and watch for any signs of liver failure. Avoid alcohol completely. Avoid acetaminophen (Tylenol) unless we tell you it is safe. Because hepatitis B can spread through blood and sexual contact, we will also test you for other sexually transmitted infections (HIV, syphilis, hepatitis C, gonorrhea, chlamydia) and connect you with preventive medicine to discuss notifying anyone who may have been exposed. Your household members and sexual partners should be tested and may need vaccination. Please go to the emergency department right away if you develop yellow skin or eyes, severe abdominal pain, confusion, or unusual bleeding."
+        },
+        {
+          "id": "chronic_infection",
+          "label": "Chronic hepatitis B infection",
+          "match": { "hbsag": true, "anti_hbs": false, "anti_hbc_total": true, "anti_hbc_igm": false },
+          "category": "Chronic HBV infection — staging + treatment-eligibility workup needed",
+          "next_tests": [
+            "HBV DNA (viral load), HBeAg / anti-HBe.",
+            "ALT, AST, ALP, total/direct bilirubin, albumin, PT/INR, platelets.",
+            "FIB-4 score and / or transient elastography for fibrosis.",
+            "Hepatocellular carcinoma screening: AFP + RUQ ultrasound every 6 months for at-risk groups (Asian male ≥40, Asian female ≥50, African ≥20, family history of HCC, cirrhosis).",
+            "Full STI co-infection screen given shared transmission risk: HIV (4th-gen Ag/Ab), syphilis (RPR + treponemal), HCV (anti-HCV with reflex RNA), HDV (anti-HDV — co-infection worsens prognosis), gonorrhea + chlamydia NAAT, trichomonas if female.",
+            "Discuss with preventive medicine for partner notification and public-health reporting per local policy.",
+            "Hepatology referral for treatment-eligibility decision per AASLD."
+          ],
+          "ehr_plan": "Hep B serology consistent with chronic HBV infection (HBsAg+, anti-HBc total+, anti-HBc IgM−, anti-HBs−). Plan: HBV DNA, HBeAg/anti-HBe; LFT panel with synthetic function; FIB-4 / elastography; HCC surveillance per AASLD risk groups; full STI co-infection screen (HIV, RPR + treponemal, HCV, HDV, GC/CT NAAT, trichomonas if female); preventive medicine consult for partner notification and public-health reporting; hepatology referral for treatment-eligibility decision. Counsel on transmission, household / partner testing and vaccination, alcohol avoidance, hepatotoxic medication caution.",
+          "patient_communication": "Your blood test shows chronic hepatitis B (long-standing infection). Most people with chronic hepatitis B feel well, but we need regular follow-up to check the virus level, your liver, and to screen for liver complications. Because hepatitis B can spread through blood and sexual contact, we will also test you for other sexually transmitted infections (HIV, syphilis, hepatitis C and D, gonorrhea, chlamydia) and connect you with preventive medicine to help notify anyone who may have been exposed. We will refer you to a liver specialist to decide whether antiviral treatment is needed. Avoid alcohol. Tell your doctor about all medications. Your household members and sexual partners should be tested and likely vaccinated."
+        },
+        {
+          "id": "window_period",
+          "label": "Acute HBV in window period (HBsAg cleared, anti-HBs not yet developed)",
+          "match": { "hbsag": false, "anti_hbs": false, "anti_hbc_total": true, "anti_hbc_igm": true },
+          "category": "Acute HBV in window period (rare) — between HBsAg clearance and anti-HBs appearance",
+          "next_tests": [
+            "Repeat full panel in 4–6 weeks (anti-HBs should appear).",
+            "HBV DNA to confirm clearing infection.",
+            "ALT, AST, hepatic synthetic function.",
+            "Full STI co-infection screen (active recent infection): HIV (4th-gen Ag/Ab), syphilis (RPR + treponemal), HCV w/ reflex RNA, GC/CT NAAT, trichomonas if female.",
+            "Discuss with preventive medicine for partner notification."
+          ],
+          "ehr_plan": "Hep B serology consistent with the window period of acute HBV (anti-HBc IgM+, anti-HBc total+, HBsAg−, anti-HBs−). Plan: repeat panel in 4–6 weeks; HBV DNA; LFTs; full STI co-infection screen (HIV, RPR + treponemal, HCV, GC/CT, trichomonas if female); preventive medicine consult for partner notification; counsel on transmission until anti-HBs appears.",
+          "patient_communication": "Your blood test suggests a recent hepatitis B infection that is in the process of clearing. We will repeat the test in 4–6 weeks to confirm. We will also test for other infections that can spread similarly (HIV, syphilis, hepatitis C, gonorrhea, chlamydia) and connect you with preventive medicine to help notify partners. Until the next test, treat yourself as still potentially infectious — your household members and sexual partners should be tested."
+        },
+        {
+          "id": "resolved_infection",
+          "label": "Resolved past HBV infection (immune)",
+          "match": { "hbsag": false, "anti_hbs": true, "anti_hbc_total": true, "anti_hbc_igm": false },
+          "category": "Resolved past HBV infection — natural immunity",
+          "next_tests": [
+            "No routine follow-up needed.",
+            "If immunosuppression planned (chemotherapy, anti-CD20, prolonged steroids, biologics) — HBV DNA + hepatology consult; antiviral prophylaxis to prevent reactivation per AASLD."
+          ],
+          "ehr_plan": "Hep B serology consistent with resolved past HBV infection: natural immunity (HBsAg−, anti-HBs+, anti-HBc total+). No active disease. Counsel on reactivation risk if future immunosuppression — antiviral prophylaxis indicated (per AASLD).",
+          "patient_communication": "Your blood test shows you had hepatitis B in the past and your body cleared it. You are now immune. No treatment is needed. If you ever need chemotherapy or strong immune-suppressing medication in the future, tell your doctor — sometimes the virus can reactivate, and a preventive antiviral may be needed."
+        },
+        {
+          "id": "vaccinated",
+          "label": "Immune from vaccination",
+          "match": { "hbsag": false, "anti_hbs": true, "anti_hbc_total": false, "anti_hbc_igm": false },
+          "category": "Immune from vaccination — no infection",
+          "next_tests": [
+            "No follow-up needed.",
+            "For healthcare workers, document anti-HBs titer ≥10 mIU/mL as evidence of immunity per CDC."
+          ],
+          "ehr_plan": "Hep B serology consistent with vaccine-induced immunity (anti-HBs+, HBsAg−, anti-HBc total−). No infection. Document immune status; no further testing needed.",
+          "patient_communication": "Your blood test shows you are immune to hepatitis B from vaccination. No follow-up needed."
+        },
+        {
+          "id": "lone_anti_hbc",
+          "label": "Isolated anti-HBc (resolved / occult / false-positive)",
+          "match": { "hbsag": false, "anti_hbs": false, "anti_hbc_total": true, "anti_hbc_igm": false },
+          "category": "Isolated anti-HBc — investigate (resolved with anti-HBs lost; occult HBV; or false-positive)",
+          "next_tests": [
+            "HBV DNA (rule out occult HBV).",
+            "Repeat anti-HBc and anti-HBs in 4–6 weeks (rule out lab error / waning immunity).",
+            "Full STI screen given shared-risk populations: HIV (4th-gen Ag/Ab), syphilis (RPR + treponemal), HCV (anti-HCV with reflex RNA).",
+            "Consider preventive medicine consultation if HBV DNA detectable or other STI screens positive.",
+            "If immunosuppression planned — antiviral prophylaxis or close monitoring per AASLD (reactivation risk)."
+          ],
+          "ehr_plan": "Hep B serology shows isolated anti-HBc (HBsAg−, anti-HBs−, anti-HBc total+, anti-HBc IgM−). Plan: HBV DNA to rule out occult infection; repeat panel in 4–6 weeks to confirm; full STI screen (HIV, RPR + treponemal, HCV w/ reflex RNA) given shared-risk overlap; preventive medicine consult if HBV DNA detectable or other STI screens positive; counsel on reactivation risk if future immunosuppression.",
+          "patient_communication": "Your blood test shows you have been exposed to hepatitis B at some point, but the picture is incomplete. We will check whether the virus is still present at a low level and recheck the antibody levels in 4–6 weeks. Because hepatitis B and other infections can share the same routes of spread, we will also test for HIV, syphilis, and hepatitis C."
+        },
+        {
+          "id": "susceptible",
+          "label": "Susceptible — no prior exposure or vaccination",
+          "match": { "hbsag": false, "anti_hbs": false, "anti_hbc_total": false, "anti_hbc_igm": false },
+          "category": "Susceptible — vaccinate",
+          "next_tests": [
+            "Hepatitis B vaccine series (3 doses at 0, 1, 6 months; or 2-dose Heplisav-B).",
+            "Document anti-HBs titer 1–2 months after the final dose for healthcare workers and high-risk groups."
+          ],
+          "ehr_plan": "Hep B serology consistent with susceptibility (all markers negative). Plan: vaccinate with HBV series (3-dose recombinant or 2-dose Heplisav-B); document anti-HBs ≥10 mIU/mL post-series for healthcare workers and high-risk groups per CDC.",
+          "patient_communication": "Your blood test shows you have never had hepatitis B and are not vaccinated. We recommend the hepatitis B vaccine series — it is safe and very effective. We will start the first dose today."
+        }
+      ],
+      "fallback": {
+        "id": "indeterminate",
+        "label": "Indeterminate / atypical pattern — repeat",
+        "category": "Atypical Hep B serology pattern — repeat to rule out lab error",
+        "next_tests": [
+          "Repeat full Hep B serology panel in 4–6 weeks.",
+          "HBV DNA if clinically suspicious.",
+          "Hepatology consult if pattern persists."
+        ],
+        "ehr_plan": "Hep B serology shows an atypical pattern. Plan: repeat panel in 4–6 weeks (rule out lab error / transition); HBV DNA if clinically suspicious; hepatology if pattern persists.",
+        "patient_communication": "Your hepatitis B blood test result is unusual and may need to be repeated. We will recheck in 4–6 weeks."
+      },
+      "sources": [
+        "CDC: Interpretation of Hepatitis B Serologic Test Results",
+        "AASLD 2018 Hepatitis B Guidance (Terrault et al.)"
+      ]
     }
   }
 }
