@@ -73,6 +73,27 @@ with st.sidebar:
         help="Order if not done; required to assign CKD A-stage.",
     )
 
+    st.markdown("---")
+    st.subheader("Cardiovascular risk inputs (PREVENT)")
+    st.caption(
+        "If you evaluate total cholesterol + HDL alongside these inputs, "
+        "the AHA PREVENT 2023 10-year ASCVD / CVD / HF risk is computed "
+        "automatically. Validated for ages 30–79 without prior CVD."
+    )
+    systolic_bp = st.number_input(
+        "Systolic BP (mmHg)",
+        min_value=0, max_value=250, value=0, step=1,
+        help="PREVENT requires SBP 90–200.",
+    )
+    smoker_choice = st.selectbox("Current smoker?", options=["—", "no", "yes"], index=0)
+    bmi = st.number_input(
+        "BMI (kg/m²)",
+        min_value=0.0, max_value=80.0, value=0.0, step=0.1, format="%.1f",
+        help="PREVENT requires BMI 18.5–39.9.",
+    )
+    on_htn_meds_choice = st.selectbox("On antihypertensive medication?", options=["—", "no", "yes"], index=0)
+    on_statin_choice = st.selectbox("On lipid-lowering / statin therapy?", options=["—", "no", "yes"], index=0)
+
     context: dict = {}
     if sex_choice != "—":
         context["sex"] = sex_choice
@@ -90,6 +111,16 @@ with st.sidebar:
         context["baseline_creatinine_date"] = baseline_cr_date.strip()
     if urine_acr > 0:
         context["urine_acr"] = urine_acr
+    if systolic_bp > 0:
+        context["systolic_bp"] = systolic_bp
+    if smoker_choice in ("yes", "no"):
+        context["current_smoker"] = (smoker_choice == "yes")
+    if bmi > 0:
+        context["bmi"] = bmi
+    if on_htn_meds_choice in ("yes", "no"):
+        context["on_htn_meds"] = (on_htn_meds_choice == "yes")
+    if on_statin_choice in ("yes", "no"):
+        context["on_cholesterol_meds"] = (on_statin_choice == "yes")
 
 
 # ---------- Input modes ----------
@@ -282,9 +313,13 @@ def render_result(result: dict, derived: dict) -> None:
 
 
 def render_session_derived(derived: dict) -> None:
-    has_anything = any(
-        derived.get(k) is not None
-        for k in ("bun_cr_ratio", "anion_gap", "egfr", "kdigo_aki_stage")
+    prevent = derived.get("prevent") or {}
+    has_anything = (
+        derived.get("bun_cr_ratio") is not None
+        or derived.get("anion_gap") is not None
+        or derived.get("egfr") is not None
+        or derived.get("kdigo_aki_stage")
+        or prevent.get("available")
     )
     if not has_anything:
         return
@@ -308,6 +343,27 @@ def render_session_derived(derived: dict) -> None:
         st.markdown(f"**KDIGO AKI staging:** {derived['kdigo_aki_stage']}")
     if derived.get("bun_cr_ratio_interpretation"):
         st.info(derived["bun_cr_ratio_interpretation"])
+
+    if prevent.get("available"):
+        st.markdown("### AHA PREVENT 2023 — 10-year risk")
+        cols = st.columns(3)
+        cols[0].metric("ASCVD", f"{prevent['ascvd_10y']}%")
+        cols[1].metric("Total CVD", f"{prevent['cvd_10y']}%")
+        cols[2].metric("Heart failure", f"{prevent['hf_10y']}%")
+        tier = prevent.get("risk_tier", "")
+        tier_color = {"low": "🟢", "intermediate": "🟡", "high": "🔴"}.get(tier, "")
+        st.markdown(f"**Risk tier:** {tier_color} {tier.title() if tier else '—'}")
+        if prevent.get("statin_recommendation"):
+            st.info(prevent["statin_recommendation"])
+    elif prevent.get("missing"):
+        st.caption(
+            "PREVENT 10-yr risk not yet computed — missing: "
+            + ", ".join(prevent["missing"])
+            + ". Fill in the sidebar 'Cardiovascular risk inputs' section "
+            "(and evaluate total cholesterol + HDL as labs) to enable it."
+        )
+    elif prevent.get("out_of_range"):
+        st.warning("PREVENT not computed: " + "; ".join(prevent["out_of_range"]))
 
     st.markdown("---")
 
@@ -346,6 +402,13 @@ def render_combined_session_output(results: list[dict], derived: dict) -> None:
             "Missing for complete CKD staging: "
             + ", ".join(derived["missing_for_ckd_staging"])
             + "."
+        )
+    prevent = derived.get("prevent") or {}
+    if prevent.get("available"):
+        derived_lines.append(
+            f"PREVENT 10-yr risks: ASCVD {prevent['ascvd_10y']}%, total CVD "
+            f"{prevent['cvd_10y']}%, HF {prevent['hf_10y']}% "
+            f"(tier: {prevent['risk_tier']}). {prevent.get('statin_recommendation', '')}"
         )
 
     ap_lines: list[str] = []
