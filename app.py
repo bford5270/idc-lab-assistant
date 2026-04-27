@@ -18,6 +18,11 @@ from engine import (
     load_rules,
 )
 from lab_parser import parse_text
+from lab_screenshot import (
+    LabScreenshotError,
+    extract_labs_from_image,
+    resolve_api_key,
+)
 
 
 st.set_page_config(page_title="IDC Lab Assistant", layout="wide")
@@ -94,6 +99,18 @@ with st.sidebar:
     on_htn_meds_choice = st.selectbox("On antihypertensive medication?", options=["—", "no", "yes"], index=0)
     on_statin_choice = st.selectbox("On lipid-lowering / statin therapy?", options=["—", "no", "yes"], index=0)
 
+    st.markdown("---")
+    st.subheader("Screenshot upload (optional)")
+    st.caption(
+        "Required only for the Upload screenshot tab. Used once per upload "
+        "to call Claude vision and parse the lab table. ANTHROPIC_API_KEY "
+        "in the environment is used automatically; this field overrides it."
+    )
+    sidebar_api_key = st.text_input(
+        "Anthropic API key", type="password",
+        help="Leave blank to use the ANTHROPIC_API_KEY env var.",
+    )
+
     context: dict = {}
     if sex_choice != "—":
         context["sex"] = sex_choice
@@ -125,7 +142,9 @@ with st.sidebar:
 
 # ---------- Input modes ----------
 
-tab_manual, tab_paste = st.tabs(["Manual entry", "Paste lab text"])
+tab_manual, tab_paste, tab_shot = st.tabs(
+    ["Manual entry", "Paste lab text", "Upload screenshot"]
+)
 panel_result: dict | None = None
 
 with tab_manual:
@@ -157,6 +176,84 @@ with tab_paste:
         else:
             inputs = [(p.lab_id, p.value) for p in parsed]
             panel_result = evaluate_panel(inputs, rules, context)
+
+with tab_shot:
+    st.caption(
+        "Upload a screenshot of a lab table (e.g. from Genesis). The image is "
+        "sent to Claude vision once for parsing — **de-identified data only**, "
+        "same policy as the rest of the tool. Review and correct values before "
+        "evaluating."
+    )
+    uploaded = st.file_uploader(
+        "Lab-table screenshot",
+        type=["png", "jpg", "jpeg"],
+        key="shot_uploader",
+    )
+
+    if uploaded is not None:
+        st.image(uploaded, caption=uploaded.name, use_container_width=True)
+
+        if st.button("Extract labs from screenshot", key="shot_extract"):
+            api_key = resolve_api_key(sidebar_api_key)
+            if not api_key:
+                st.error(
+                    "No Anthropic API key. Paste one in the sidebar or set "
+                    "ANTHROPIC_API_KEY in the environment."
+                )
+            else:
+                with st.spinner("Calling Claude vision…"):
+                    try:
+                        extracted = extract_labs_from_image(
+                            uploaded.getvalue(),
+                            rules,
+                            media_type=uploaded.type or "image/png",
+                            api_key=api_key,
+                        )
+                    except LabScreenshotError as exc:
+                        st.error(str(exc))
+                        extracted = []
+                    except Exception as exc:  # noqa: BLE001
+                        st.error(f"Vision call failed: {exc}")
+                        extracted = []
+                st.session_state["shot_extracted"] = [
+                    {"lab_id": e.lab_id, "value": e.value, "raw_label": e.raw_label}
+                    for e in extracted
+                ]
+                if extracted:
+                    st.success(f"Extracted {len(extracted)} labs. Review below.")
+                else:
+                    st.warning("No recognized labs were extracted.")
+
+    rows = st.session_state.get("shot_extracted", [])
+    if rows:
+        st.markdown("**Review extracted values** — fix any OCR errors before evaluating.")
+        edited = st.data_editor(
+            rows,
+            num_rows="dynamic",
+            use_container_width=True,
+            column_config={
+                "lab_id": st.column_config.SelectboxColumn(
+                    "Lab", options=sorted(rules["labs"].keys()), required=True,
+                ),
+                "value": st.column_config.NumberColumn(
+                    "Value", required=True, format="%.2f",
+                ),
+                "raw_label": st.column_config.TextColumn(
+                    "Source label", help="As read from the screenshot — informational only.",
+                ),
+            },
+            key="shot_editor",
+        )
+        if st.button("Use these values", key="shot_eval"):
+            inputs = [
+                (r["lab_id"], float(r["value"]))
+                for r in edited
+                if r.get("lab_id") and r.get("value") is not None
+            ]
+            if inputs:
+                panel_result = evaluate_panel(inputs, rules, context)
+            else:
+                st.warning("Add at least one lab + value before evaluating.")
 
 
 # ---------- Rendering helpers ----------

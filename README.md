@@ -48,11 +48,17 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-The app opens in your browser. Two input modes:
+The app opens in your browser. Three input modes:
 
 - **Manual entry** — pick a lab from the dropdown and enter a value.
 - **Paste lab text** — paste lab data, one lab per line (`K 6.2`,
   `Glucose 320`, etc.).
+- **Upload screenshot** — drop a screenshot of a lab table (e.g. from
+  Genesis); Claude vision parses it into structured values that the IDC
+  reviews and corrects before evaluating. Requires an Anthropic API key
+  (paste in the sidebar or set `ANTHROPIC_API_KEY`). Uses
+  `claude-haiku-4-5` by default. Same de-identified-only policy as the
+  rest of the tool — do not upload screenshots that contain PHI.
 
 The optional sidebar (sex, age, pregnancy) sharpens sex-stratified bands
 (Hgb, Cr, ALT, AST). When sex is not provided, the engine falls back to
@@ -64,10 +70,11 @@ conservative default bands and flags the assumption in the output.
 rules.json              Canonical rules — thresholds + follow-up content
 engine.py               Pure engine: load_rules, evaluate, render_template
 lab_parser.py           Free-text parser (line-by-line, word-boundary)
+lab_screenshot.py       Vision-based lab extraction (Claude API)
 app.py                  Streamlit UI
-requirements.txt        Runtime deps (streamlit, matplotlib)
+requirements.txt        Runtime deps (streamlit, matplotlib, anthropic)
 requirements-dev.txt    Dev deps (pytest)
-tests/                  Pytest suite for engine + parser
+tests/                  Pytest suite for engine, parser, and screenshot module
 .github/workflows/      CI: pytest on every push to main
 ```
 
