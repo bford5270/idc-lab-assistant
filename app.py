@@ -55,6 +55,12 @@ with st.sidebar:
     sex_choice = st.selectbox("Sex", options=["—", "female", "male"], index=0)
     age_input = st.number_input("Age", min_value=0, max_value=120, value=0, step=1)
     pregnancy = st.checkbox("Pregnant", value=False)
+    trimester_choice = st.selectbox(
+        "Trimester (if pregnant)",
+        options=["—", "1", "2", "3"], index=0,
+        help="Selects trimester-specific TSH bands per ATA 2017. "
+             "Leave blank for the generic pregnancy band.",
+    )
     diabetic_choice = st.selectbox("Diabetic?", options=["—", "no", "yes"], index=0)
 
     st.markdown("---")
@@ -118,6 +124,8 @@ with st.sidebar:
         context["age"] = age_input
     if pregnancy:
         context["pregnancy"] = True
+        if trimester_choice in ("1", "2", "3"):
+            context["trimester"] = int(trimester_choice)
     if diabetic_choice == "yes":
         context["diabetic"] = True
     elif diabetic_choice == "no":
@@ -368,8 +376,14 @@ def render_result(result: dict, derived: dict) -> None:
 
     if result.get("pregnancy_thresholds"):
         st.info(
-            "Pregnancy-specific thresholds applied (ATA 2017). Treatment "
-            "thresholds for subclinical hypothyroidism are lower in pregnancy."
+            "Pregnancy-specific thresholds applied. Set trimester in the "
+            "sidebar for trimester-tuned TSH bands per ATA 2017."
+        )
+
+    if result.get("elderly_thresholds"):
+        st.info(
+            "Age-adjusted thresholds applied (≥70). TSH upper limit widens "
+            "to 5.0 mIU/L per ATA hypothyroidism guidance on age-related rise."
         )
 
     branch = result.get("follow_up_branch")

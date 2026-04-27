@@ -112,10 +112,21 @@ demos with synthetic data but is not appropriate for real clinical use.
   statin-intensity recommendation per ACC/AHA.
 - Screenshot upload mode: Claude vision parses lab-table screenshots
   into editable structured values.
-- Pregnancy-conditioned TSH thresholds (ATA 2017): when the sidebar
-  Pregnant flag is set, the engine selects pregnancy-specific bands
-  (Normal 0.3–2.5 mIU/L) so subclinical hypothyroidism is flagged at
-  TSH > 2.5 instead of > 4.0.
+- Pregnancy-conditioned thresholds (Phase 2 closure):
+  - **TSH** with trimester-specific bands per ATA 2017 — T1 Normal
+    0.3–2.5, T2 0.3–3.0, T3 0.4–3.0; trimester selector in the
+    sidebar; generic pregnancy band as fallback when trimester unknown.
+  - **Hemoglobin** with anemia floor at 11 g/dL per ACOG (vs 12 for
+    non-pregnant female).
+  - **Alkaline phosphatase** with Normal extending to 260 U/L
+    (placental ALP physiologically raises ALP 2–3× in pregnancy).
+  - **Creatinine** with Normal 0.4–0.9 mg/dL and elevated threshold
+    at 1.1 mg/dL per ACOG preeclampsia criteria (pregnancy GFR rises
+    ~50%, lowering Cr).
+- Age-conditioned TSH thresholds: at age ≥70, the engine selects an
+  elderly band with Normal extending to 5.0 mIU/L per ATA hypothyroidism
+  guidance on age-related TSH rise. Pregnancy outranks elderly when
+  both apply.
 - LFT pattern classifier (R-factor): when ALT and ALP are both in the
   panel, the engine computes R = (ALT/ALT_ULN) / (ALP/ALP_ULN) and
   classifies hepatocellular (R>5) / mixed (2–5) / cholestatic (R<2)
@@ -127,12 +138,9 @@ demos with synthetic data but is not appropriate for real clinical use.
   (iron studies for micro; reticulocyte + smear for normo;
   B12/folate/TSH for macro).
 
-**Phase 2 (in progress) — clinical content + context conditioning:**
-- Trimester-specific TSH bands (current pregnancy band is a single
-  conservative range; ATA 2017 publishes T1/T2/T3 specifics).
-- Age-conditioned thresholds where guidelines differ.
-- Pregnancy thresholds for additional labs (Hgb physiologic anemia,
-  ALP placental rise, Cr lower in pregnancy).
+**Phase 2 — closed.** Pregnancy and age-adjusted thresholds shipped
+above. Future per-lab context expansions (pediatric ALP, sex/age PSA
+bands, etc.) live in Phase 3 alongside the qualitative interpreters.
 
 **Phase 3 — qualitative interpreters + panel patterns:**
 - Hep B serology (HBsAg / anti-HBs / anti-HBc / IgM).

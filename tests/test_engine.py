@@ -10,6 +10,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from engine import (
+    ELDERLY_AGE_THRESHOLD,
     URGENCY_BY_SEVERITY,
     assign_ckd_a_stage,
     assign_ckd_g_stage,
@@ -23,6 +24,7 @@ from engine import (
     compute_lft_r_factor,
     compute_prevent_risk,
     correct_calcium_for_albumin,
+    elderly_thresholds_in_use,
     evaluate,
     evaluate_panel,
     find_severity,
@@ -542,6 +544,125 @@ def test_evaluate_tsh_pregnancy_normal_lower_bound(rules):
     # Pregnancy Normal band: 0.3-2.5; 0.35 is Normal
     preg = evaluate("tsh", 0.35, rules, {"pregnancy": True})
     assert preg["severity"] == "Normal"
+
+
+# ---------- trimester-specific TSH ----------
+
+
+def test_tsh_trimester_T1_uses_more_conservative_upper(rules):
+    """T1 upper Normal is 2.5; T2 is 3.0. Same TSH=2.7 should split severity."""
+    t1 = evaluate("tsh", 2.7, rules, {"pregnancy": True, "trimester": 1})
+    t2 = evaluate("tsh", 2.7, rules, {"pregnancy": True, "trimester": 2})
+    assert t1["severity"] == "Mild High"
+    assert t2["severity"] == "Normal"
+    assert t1["pregnancy_thresholds"] is True
+    assert t2["pregnancy_thresholds"] is True
+
+
+def test_tsh_trimester_falls_back_to_generic_when_unknown(rules):
+    """Unknown trimester -> generic pregnancy band (Normal upper 2.5)."""
+    res = evaluate("tsh", 2.7, rules, {"pregnancy": True})
+    assert res["severity"] == "Mild High"
+
+
+def test_tsh_invalid_trimester_falls_back(rules):
+    """Trimester outside 1-3 is ignored; generic pregnancy band used."""
+    res = evaluate("tsh", 2.7, rules, {"pregnancy": True, "trimester": 4})
+    assert res["severity"] == "Mild High"
+
+
+def test_pick_thresholds_trimester_outranks_generic_pregnancy(rules):
+    """When both pregnancy and pregnancy_TN exist, the trimester-specific
+    band is selected."""
+    tsh = rules["labs"]["tsh"]
+    thresh, _ = pick_thresholds(
+        tsh, {"pregnancy": True, "trimester": 3}
+    )
+    # T3 Normal is 0.4-3.0; should match T3 band
+    assert find_severity(0.35, thresh) == "Mild Low"  # T3 Mild Low 0.1-0.4
+    assert find_severity(2.7, thresh) == "Normal"     # T3 Normal 0.4-3.0
+
+
+# ---------- elderly TSH + age-conditioning ----------
+
+
+def test_tsh_elderly_widens_upper_normal(rules):
+    """Age 75 + TSH 4.5 should be Normal (elderly band 0.4-5.0); same value
+    is Mild High in default band."""
+    elderly = evaluate("tsh", 4.5, rules, {"age": 75})
+    young = evaluate("tsh", 4.5, rules, {"age": 50})
+    assert elderly["severity"] == "Normal"
+    assert young["severity"] == "Mild High"
+    assert elderly["elderly_thresholds"] is True
+    assert young["elderly_thresholds"] is False
+
+
+def test_elderly_thresholds_in_use_at_boundary(rules):
+    tsh = rules["labs"]["tsh"]
+    assert elderly_thresholds_in_use(tsh, {"age": ELDERLY_AGE_THRESHOLD}) is True
+    assert elderly_thresholds_in_use(tsh, {"age": ELDERLY_AGE_THRESHOLD - 1}) is False
+
+
+def test_pregnancy_outranks_elderly(rules):
+    """75yo pregnant patient (rare but possible — gestational carrier, etc.)
+    should get pregnancy bands, not elderly. Pregnancy dominates."""
+    res = evaluate("tsh", 4.5, rules, {"pregnancy": True, "age": 75})
+    # Pregnancy Normal upper is 2.5 -> 4.5 is Moderate High (4.0-10.0)
+    # Elderly Normal upper is 5.0 -> 4.5 would be Normal there
+    assert res["pregnancy_thresholds"] is True
+    assert res["elderly_thresholds"] is False
+    assert res["severity"] == "Moderate High"
+
+
+def test_elderly_only_applies_when_band_present(rules):
+    """Sodium has no 'elderly' band -> age 75 falls through to default/sex."""
+    # Sodium has only static `thresholds`, so context doesn't change anything
+    res = evaluate("sodium", 138, rules, {"age": 80})
+    assert res["elderly_thresholds"] is False
+
+
+# ---------- pregnancy bands for Hgb / ALP / Cr ----------
+
+
+def test_hgb_pregnancy_normal_floor_is_11(rules):
+    """Hgb 11.5 is Mild Low for non-pregnant female (Normal floor 12.0) but
+    Normal in pregnancy (Normal floor 11.0)."""
+    non_preg = evaluate("hemoglobin", 11.5, rules, {"sex": "female"})
+    preg = evaluate(
+        "hemoglobin", 11.5, rules, {"sex": "female", "pregnancy": True}
+    )
+    assert non_preg["severity"] == "Mild Low"
+    assert preg["severity"] == "Normal"
+
+
+def test_alp_pregnancy_doesnt_overflag_t3_level(rules):
+    """ALP 200 is Mild High non-pregnant (>130) but Normal in pregnancy
+    (placental ALP raises baseline 2-3x; pregnancy Normal extends to 260)."""
+    non_preg = evaluate("alkaline_phosphatase", 200, rules, {})
+    preg = evaluate("alkaline_phosphatase", 200, rules, {"pregnancy": True})
+    assert non_preg["severity"] == "Mild High"
+    assert preg["severity"] == "Normal"
+
+
+def test_creatinine_pregnancy_lower_normal_ceiling(rules):
+    """Cr 1.0 is Normal for non-pregnant female (Normal 0.5-1.1) but
+    Mild High in pregnancy (Normal 0.4-0.9; pregnancy GFR rises ~50%)."""
+    non_preg = evaluate("creatinine", 1.0, rules, {"sex": "female"})
+    preg = evaluate(
+        "creatinine", 1.0, rules, {"sex": "female", "pregnancy": True}
+    )
+    assert non_preg["severity"] == "Normal"
+    assert preg["severity"] == "Mild High"
+
+
+def test_creatinine_pregnancy_outranks_sex(rules):
+    """Pregnant patient with sex=female should get pregnancy band, not female."""
+    cr_def = rules["labs"]["creatinine"]
+    thresh, _ = pick_thresholds(
+        cr_def, {"sex": "female", "pregnancy": True}
+    )
+    # Pregnancy Normal max is 0.9; female Normal max is 1.1
+    assert find_severity(1.0, thresh) == "Mild High"
 
 
 # ---------- LFT pattern (R-factor) ----------

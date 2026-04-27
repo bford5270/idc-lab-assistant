@@ -333,6 +333,13 @@
           { "severity": "Moderate High", "min": 2.0, "max": 3.0 },
           { "severity": "Severe High",   "min": 3.0, "max": 4.0 },
           { "severity": "Critical High", "min": 4.0 }
+        ],
+        "pregnancy": [
+          { "severity": "Normal",        "min": 0.4, "max": 0.9 },
+          { "severity": "Mild High",     "min": 0.9, "max": 1.1 },
+          { "severity": "Moderate High", "min": 1.1, "max": 2.0 },
+          { "severity": "Severe High",   "min": 2.0, "max": 3.0 },
+          { "severity": "Critical High", "min": 3.0 }
         ]
       },
       "follow_up": {
@@ -470,8 +477,18 @@
           { "severity": "Normal",       "min": 13.0, "max": 17.0 },
           { "severity": "Mild High",    "min": 17.0, "max": 18.5 },
           { "severity": "Severe High",  "min": 18.5 }
+        ],
+        "pregnancy": [
+          { "severity": "Critical Low", "max": 7.0 },
+          { "severity": "Severe Low",   "min": 7.0,  "max": 8.0 },
+          { "severity": "Moderate Low", "min": 8.0,  "max": 10.0 },
+          { "severity": "Mild Low",     "min": 10.0, "max": 11.0 },
+          { "severity": "Normal",       "min": 11.0, "max": 15.5 },
+          { "severity": "Mild High",    "min": 15.5, "max": 17.0 },
+          { "severity": "Severe High",  "min": 17.0 }
         ]
       },
+      "pregnancy_note": "Anemia in pregnancy is Hgb <11 g/dL (T1/T3) or <10.5 (T2) per ACOG. Engine uses 11 as the Normal floor across all trimesters — slightly conservative for T2 to avoid missed iron deficiency. Plasma volume expansion lowers Hgb physiologically; supplemental iron is recommended in pregnancy.",
       "follow_up": {
         "Critical Low": {
           "category": "Critical anemia (Hgb <7.0 g/dL) — AABB transfusion threshold",
@@ -1052,13 +1069,21 @@
       "unit": "U/L",
       "kind": "numeric",
       "trendable": true,
-      "context_note": "ALP elevation may be hepatic (cholestatic) or bony — check GGT to localize: GGT elevated → hepatic; GGT normal → bone or other. Pregnancy and growing children/adolescents have physiologically elevated ALP.",
-      "thresholds": [
-        { "severity": "Normal",        "min": 40,  "max": 130 },
-        { "severity": "Mild High",     "min": 130, "max": 260 },
-        { "severity": "Moderate High", "min": 260, "max": 650 },
-        { "severity": "Severe High",   "min": 650 }
-      ],
+      "context_note": "ALP elevation may be hepatic (cholestatic) or bony — check GGT to localize: GGT elevated → hepatic; GGT normal → bone or other. Pregnancy and growing children/adolescents have physiologically elevated ALP. Engine selects pregnancy bands when context.pregnancy is True (placental ALP raises ALP 2–3× baseline, especially T3).",
+      "thresholds_by_context": {
+        "default": [
+          { "severity": "Normal",        "min": 40,  "max": 130 },
+          { "severity": "Mild High",     "min": 130, "max": 260 },
+          { "severity": "Moderate High", "min": 260, "max": 650 },
+          { "severity": "Severe High",   "min": 650 }
+        ],
+        "pregnancy": [
+          { "severity": "Normal",        "min": 40,  "max": 260 },
+          { "severity": "Mild High",     "min": 260, "max": 400 },
+          { "severity": "Moderate High", "min": 400, "max": 650 },
+          { "severity": "Severe High",   "min": 650 }
+        ]
+      },
       "follow_up": {
         "Mild High": {
           "category": "Mild ALP elevation (1–2× ULN)",
@@ -1176,7 +1201,7 @@
       "unit": "mIU/L",
       "kind": "numeric",
       "trendable": true,
-      "context_note": "TSH reference is age- and pregnancy-dependent. Pregnancy bands per ATA 2017 (Alexander et al., Thyroid). Engine selects pregnancy bands when context.pregnancy is True. Always interpret with free T4.",
+      "context_note": "TSH reference is age- and pregnancy-dependent. Pregnancy bands per ATA 2017 (Alexander et al., Thyroid) — trimester-specific bands selected when context.trimester ∈ {1,2,3}; generic pregnancy fallback otherwise. Elderly band (age ≥70) widens the upper limit to 5.0 mIU/L per ATA hypothyroidism guidance on age-related TSH rise. Always interpret with free T4.",
       "thresholds_by_context": {
         "default": [
           { "severity": "Severe Low",    "max": 0.1 },
@@ -1193,6 +1218,38 @@
           { "severity": "Mild High",     "min": 2.5, "max": 4.0 },
           { "severity": "Moderate High", "min": 4.0, "max": 10.0 },
           { "severity": "Severe High",   "min": 10.0 }
+        ],
+        "pregnancy_T1": [
+          { "severity": "Severe Low",    "max": 0.1 },
+          { "severity": "Mild Low",      "min": 0.1, "max": 0.3 },
+          { "severity": "Normal",        "min": 0.3, "max": 2.5 },
+          { "severity": "Mild High",     "min": 2.5, "max": 4.0 },
+          { "severity": "Moderate High", "min": 4.0, "max": 10.0 },
+          { "severity": "Severe High",   "min": 10.0 }
+        ],
+        "pregnancy_T2": [
+          { "severity": "Severe Low",    "max": 0.1 },
+          { "severity": "Mild Low",      "min": 0.1, "max": 0.3 },
+          { "severity": "Normal",        "min": 0.3, "max": 3.0 },
+          { "severity": "Mild High",     "min": 3.0, "max": 4.0 },
+          { "severity": "Moderate High", "min": 4.0, "max": 10.0 },
+          { "severity": "Severe High",   "min": 10.0 }
+        ],
+        "pregnancy_T3": [
+          { "severity": "Severe Low",    "max": 0.1 },
+          { "severity": "Mild Low",      "min": 0.1, "max": 0.4 },
+          { "severity": "Normal",        "min": 0.4, "max": 3.0 },
+          { "severity": "Mild High",     "min": 3.0, "max": 4.0 },
+          { "severity": "Moderate High", "min": 4.0, "max": 10.0 },
+          { "severity": "Severe High",   "min": 10.0 }
+        ],
+        "elderly": [
+          { "severity": "Severe Low",    "max": 0.1 },
+          { "severity": "Mild Low",      "min": 0.1, "max": 0.4 },
+          { "severity": "Normal",        "min": 0.4, "max": 5.0 },
+          { "severity": "Mild High",     "min": 5.0, "max": 10.0 },
+          { "severity": "Moderate High", "min": 10.0, "max": 20.0 },
+          { "severity": "Severe High",   "min": 20.0 }
         ]
       },
       "follow_up": {

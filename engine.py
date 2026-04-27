@@ -17,16 +17,26 @@ def load_rules(path: str | Path = "rules.json") -> dict:
         return json.load(f)
 
 
+ELDERLY_AGE_THRESHOLD = 70
+
+
 def pick_thresholds(lab_def: dict, context: dict | None) -> tuple[list[dict], bool]:
     """Pick the appropriate threshold list for the given patient context.
 
     Returns (thresholds_list, used_default_flag). used_default_flag is True
     when we fell back to the 'default' band set because the relevant context
-    key (sex, pregnancy) was not provided or not recognized.
+    key (sex, pregnancy, age) was not provided or not recognized.
 
-    Lookup order: pregnancy → sex → default. Pregnancy takes precedence
-    because pregnancy-specific reference ranges (e.g. TSH per ATA 2017)
-    differ from non-pregnant sex-stratified bands.
+    Lookup order — first match wins:
+    1. pregnancy_T<N> (trimester-specific, when context.trimester ∈ {1, 2, 3})
+    2. pregnancy (generic pregnancy fallback)
+    3. elderly (when context.age >= ELDERLY_AGE_THRESHOLD)
+    4. sex (female / male)
+    5. default
+
+    Pregnancy outranks elderly because pregnancy-specific reference ranges
+    (e.g. TSH per ATA 2017, Cr per ACOG) differ from age-adjusted bands; a
+    pregnant patient should never be evaluated against elderly TSH bands.
     """
     if "thresholds" in lab_def:
         return lab_def["thresholds"], False
@@ -34,8 +44,22 @@ def pick_thresholds(lab_def: dict, context: dict | None) -> tuple[list[dict], bo
     by_context = lab_def.get("thresholds_by_context", {})
     ctx = context or {}
 
-    if ctx.get("pregnancy") is True and "pregnancy" in by_context:
-        return by_context["pregnancy"], False
+    if ctx.get("pregnancy") is True:
+        trimester = ctx.get("trimester")
+        if trimester in (1, 2, 3):
+            tri_key = f"pregnancy_T{trimester}"
+            if tri_key in by_context:
+                return by_context[tri_key], False
+        if "pregnancy" in by_context:
+            return by_context["pregnancy"], False
+
+    age = ctx.get("age")
+    if (
+        age is not None
+        and age >= ELDERLY_AGE_THRESHOLD
+        and "elderly" in by_context
+    ):
+        return by_context["elderly"], False
 
     sex = ctx.get("sex")
     if sex and sex in by_context:
@@ -45,13 +69,33 @@ def pick_thresholds(lab_def: dict, context: dict | None) -> tuple[list[dict], bo
 
 
 def pregnancy_thresholds_in_use(lab_def: dict, context: dict | None) -> bool:
-    """True iff pick_thresholds will pick the pregnancy-specific band set."""
+    """True iff pick_thresholds will pick a pregnancy-specific band set
+    (trimester-specific or generic)."""
     if "thresholds" in lab_def:
         return False
     by_context = lab_def.get("thresholds_by_context", {})
+    ctx = context or {}
+    if ctx.get("pregnancy") is not True:
+        return False
+    trimester = ctx.get("trimester")
+    if trimester in (1, 2, 3) and f"pregnancy_T{trimester}" in by_context:
+        return True
+    return "pregnancy" in by_context
+
+
+def elderly_thresholds_in_use(lab_def: dict, context: dict | None) -> bool:
+    """True iff pick_thresholds will pick the elderly-specific band set
+    (age >= ELDERLY_AGE_THRESHOLD, no pregnancy override)."""
+    if "thresholds" in lab_def:
+        return False
+    if pregnancy_thresholds_in_use(lab_def, context):
+        return False
+    by_context = lab_def.get("thresholds_by_context", {})
+    age = (context or {}).get("age")
     return (
-        (context or {}).get("pregnancy") is True
-        and "pregnancy" in by_context
+        age is not None
+        and age >= ELDERLY_AGE_THRESHOLD
+        and "elderly" in by_context
     )
 
 
@@ -154,6 +198,7 @@ def evaluate(
         "follow_up_branch": branch,
         "threshold_used_default": used_default,
         "pregnancy_thresholds": pregnancy_thresholds_in_use(lab_def, context),
+        "elderly_thresholds": elderly_thresholds_in_use(lab_def, context),
         "differentiation": lab_def.get("differentiation"),
         "thresholds": thresholds,
         "sources": lab_def.get("sources", []),
