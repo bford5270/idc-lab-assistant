@@ -131,3 +131,55 @@ def test_evaluate_serology_rejects_non_serology_lab(rules):
 def test_evaluate_serology_unknown_lab(rules):
     r = evaluate_serology("nope_not_a_lab", {}, rules)
     assert "error" in r
+
+
+# ---------- HIV reactive flow (CDC algorithm) ----------
+
+
+def _hiv(rules: dict, **markers) -> dict:
+    inputs = {
+        "ag_ab_screen":        markers.get("ag_ab_screen"),
+        "hiv_ab_diff_confirm": markers.get("hiv_ab_diff_confirm"),
+        "hiv_1_rna":           markers.get("hiv_1_rna"),
+    }
+    return evaluate_serology("hiv_serology", inputs, rules)
+
+
+def test_hiv_non_reactive_screen(rules):
+    r = _hiv(rules, ag_ab_screen=False)
+    assert r["pattern_id"] == "non_reactive_screen"
+    assert "PrEP" in r["ehr_plan"]
+
+
+def test_hiv_confirmed_infection(rules):
+    r = _hiv(rules, ag_ab_screen=True, hiv_ab_diff_confirm=True)
+    assert r["pattern_id"] == "confirmed_hiv"
+    assert "viral load" in r["ehr_plan"].lower()
+    assert "preventive medicine" in r["ehr_plan"].lower()
+
+
+def test_hiv_acute_infection(rules):
+    r = _hiv(rules, ag_ab_screen=True, hiv_ab_diff_confirm=False, hiv_1_rna=True)
+    assert r["pattern_id"] == "acute_hiv_1"
+    assert "PEP" in r["ehr_plan"] or "pep" in r["ehr_plan"].lower()
+
+
+def test_hiv_false_reactive_screen(rules):
+    r = _hiv(rules, ag_ab_screen=True, hiv_ab_diff_confirm=False, hiv_1_rna=False)
+    assert r["pattern_id"] == "false_reactive_screen"
+
+
+def test_hiv_indeterminate_when_screen_only(rules):
+    """Reactive screen with confirmatory not yet done -> indeterminate."""
+    r = _hiv(rules, ag_ab_screen=True)
+    assert r["pattern_id"] == "indeterminate"
+    assert set(r["missing_inputs"]) == {"hiv_ab_diff_confirm", "hiv_1_rna"}
+
+
+def test_hiv_includes_full_sti_panel_in_positive_pattern(rules):
+    """Confirmed HIV should reference the full STI co-infection screen and
+    a preventive-medicine consult."""
+    r = _hiv(rules, ag_ab_screen=True, hiv_ab_diff_confirm=True)
+    plan = r["ehr_plan"].lower()
+    for term in ("rpr", "hbv", "hcv", "gc/ct", "trichomonas", "preventive medicine"):
+        assert term in plan, f"missing {term} from HIV+ EHR plan"

@@ -1714,6 +1714,100 @@
         "CDC: Interpretation of Hepatitis B Serologic Test Results",
         "AASLD 2018 Hepatitis B Guidance (Terrault et al.)"
       ]
+    },
+
+    "hiv_serology": {
+      "display_name": "HIV Reactive Flow (CDC algorithm)",
+      "kind": "serology",
+      "inputs": [
+        { "id": "ag_ab_screen",        "label": "HIV 4th-gen Ag/Ab combo screen",        "loinc": "56888-1" },
+        { "id": "hiv_ab_diff_confirm", "label": "HIV-1/HIV-2 antibody differentiation", "loinc": "75666-2" },
+        { "id": "hiv_1_rna",           "label": "HIV-1 RNA (qualitative)",               "loinc": "48512-9" }
+      ],
+      "patterns": [
+        {
+          "id": "non_reactive_screen",
+          "label": "HIV non-reactive — no infection (or pre-window-period)",
+          "match": { "ag_ab_screen": false },
+          "category": "HIV screen non-reactive — no laboratory evidence of infection",
+          "next_tests": [
+            "If recent high-risk exposure (within 4 weeks): repeat 4th-gen Ag/Ab in 4–6 weeks (window period coverage); offer PrEP per CDC.",
+            "If ongoing risk: re-screen at recommended interval (every 3–6 months for high-risk; annually for moderate risk).",
+            "Continue full STI screen (syphilis RPR + treponemal, HCV, HBV serology, GC/CT NAAT all-site, trichomonas) — HIV negative does not rule out other STIs."
+          ],
+          "ehr_plan": "HIV 4th-gen Ag/Ab screen non-reactive. No laboratory evidence of HIV infection. Plan: if recent (<4 wk) high-risk exposure — repeat in 4–6 weeks for window-period coverage; offer PrEP per CDC if ongoing risk; complete full STI panel (RPR + treponemal, HCV, HBV, GC/CT NAAT, trichomonas).",
+          "patient_communication": "Your HIV test is negative. If you may have been exposed in the last few weeks, the test can sometimes miss very recent infection — we will repeat it in 4 to 6 weeks. We can also discuss PrEP, a daily pill that prevents HIV. Please complete the rest of the STI testing today."
+        },
+        {
+          "id": "confirmed_hiv",
+          "label": "HIV infection confirmed (HIV-1 or HIV-2)",
+          "match": { "ag_ab_screen": true, "hiv_ab_diff_confirm": true },
+          "category": "Confirmed HIV infection — link to care urgently",
+          "next_tests": [
+            "HIV-1 viral load (RNA quantitative) and CD4 count — baseline staging.",
+            "HIV genotype (resistance testing) before initiating ART.",
+            "CMP, CBC, LFTs, lipid panel, fasting glucose / A1C, urinalysis (baseline metabolic + renal + hepatic).",
+            "Full STI co-infection screen: syphilis (RPR + treponemal), HBV serology (HBsAg, anti-HBs, anti-HBc total), HCV (anti-HCV with reflex RNA), GC + CT NAAT (all exposed sites including pharyngeal and rectal), trichomonas if female.",
+            "Latent TB infection: IGRA (preferred) or PPD; chest X-ray if positive.",
+            "Toxoplasma IgG, CMV IgG, VZV IgG, measles immunity (IgG) — baseline.",
+            "Pregnancy test if reproductive-age female.",
+            "Vaccinations: review HBV / HAV / HPV / pneumococcal / influenza / COVID / Tdap status.",
+            "Discuss with preventive medicine for partner notification, public-health reporting (HIV is reportable in all states), and contact tracing per local policy.",
+            "Refer to HIV-specialty care within 1 week — rapid ART initiation per DHHS / IAS-USA."
+          ],
+          "ehr_plan": "HIV confirmed — Ag/Ab screen reactive AND HIV-1/HIV-2 differentiation reactive. Plan: HIV-1 viral load + CD4 baseline; resistance genotype; CMP / CBC / LFTs / lipids / glucose / UA; full STI co-infection screen (RPR + treponemal, HBV serology, HCV w/ reflex RNA, GC/CT NAAT all-site, trichomonas if female); latent TB (IGRA preferred); toxo / CMV / VZV / measles IgG; pregnancy test if applicable; review and update HBV/HAV/HPV/pneumococcal/influenza/COVID/Tdap vaccinations; preventive medicine consult for partner notification + reporting; HIV-specialty referral within 1 week for rapid ART initiation.",
+          "patient_communication": "Your blood test confirms HIV infection. With modern treatment, HIV is a manageable chronic condition and people on consistent therapy can have a normal life expectancy and cannot transmit the virus to partners (Undetectable = Untransmittable). We will refer you urgently to an HIV specialist to start medication, ideally within a week. We will also test for other infections that share the same routes of spread (syphilis, hepatitis B and C, gonorrhea, chlamydia, trichomonas) and check for latent tuberculosis. A preventive medicine team will help with notifying anyone who may have been exposed — this is confidential and required by public health law. Please take care of yourself; we are here to support you."
+        },
+        {
+          "id": "acute_hiv_1",
+          "label": "Acute HIV-1 infection (antibody-negative window)",
+          "match": { "ag_ab_screen": true, "hiv_ab_diff_confirm": false, "hiv_1_rna": true },
+          "category": "Acute HIV-1 infection — high transmissibility, urgent linkage to care",
+          "next_tests": [
+            "HIV-1 viral load (quantitative) and CD4 — acute infection often has very high viral load.",
+            "HIV genotype (resistance testing).",
+            "CMP, CBC, LFTs, lipid panel, fasting glucose / A1C, urinalysis.",
+            "Full STI co-infection screen: syphilis (RPR + treponemal), HBV serology, HCV (anti-HCV + RNA), GC + CT NAAT all exposed sites, trichomonas if female.",
+            "Latent TB (IGRA preferred); chest X-ray if symptomatic or IGRA positive.",
+            "Pregnancy test if reproductive-age female.",
+            "Discuss with preventive medicine immediately — acute HIV is reportable, contacts may benefit from PEP (within 72 h of exposure).",
+            "Refer to HIV-specialty care within 24–72 h for immediate ART initiation."
+          ],
+          "ehr_plan": "Acute HIV-1 infection — Ag/Ab screen reactive, HIV-1/HIV-2 differentiation negative (antibody-negative window), HIV-1 RNA detected. Plan: HIV-1 quantitative viral load + CD4; resistance genotype; baseline CMP/CBC/LFTs/lipids/glucose/UA; full STI co-infection screen (RPR + treponemal, HBV serology, HCV, GC/CT NAAT all-site, trichomonas if female); latent TB (IGRA); pregnancy test if applicable; urgent preventive medicine consult — recent exposed contacts should be evaluated for PEP within 72 h; HIV-specialty referral within 24–72 h for immediate ART. Counsel on very high transmissibility during acute phase.",
+          "patient_communication": "Your blood test shows a very recent HIV infection. People are most contagious in the first weeks of HIV, so it is important to start treatment as soon as possible — we will get you to an HIV specialist within the next 1 to 3 days to begin medication. Use protection (or abstinence) until you are on treatment with an undetectable viral load. We will test you for other sexually transmitted infections and tuberculosis. The preventive medicine team will help with notifying recent contacts — anyone exposed in the last 72 hours can take a preventive medication (PEP) to lower their risk of becoming infected."
+        },
+        {
+          "id": "false_reactive_screen",
+          "label": "False-reactive screen — likely not HIV (repeat to confirm)",
+          "match": { "ag_ab_screen": true, "hiv_ab_diff_confirm": false, "hiv_1_rna": false },
+          "category": "Reactive 4th-gen screen with negative confirmatory differentiation AND negative HIV-1 RNA — likely false-reactive screen",
+          "next_tests": [
+            "Repeat 4th-gen Ag/Ab and HIV-1 RNA in 2–4 weeks to confirm clearance / rule out very early infection.",
+            "Review specimen handling and any cross-reactive conditions (recent vaccination, autoimmune disease, pregnancy).",
+            "If ongoing high-risk exposure, repeat at 4–6 and 12 weeks per CDC.",
+            "Continue full STI screen — false-reactive HIV does not rule out other STIs."
+          ],
+          "ehr_plan": "Reactive 4th-gen HIV screen with NEGATIVE HIV-1/HIV-2 antibody differentiation AND NEGATIVE HIV-1 RNA — pattern consistent with false-reactive screen. Plan: repeat 4th-gen Ag/Ab + HIV-1 RNA in 2–4 weeks; review cross-reactive conditions; continue full STI panel; counsel that current evidence does not support HIV infection but confirmation is needed.",
+          "patient_communication": "Your initial HIV screen was reactive but the follow-up tests (HIV-1/HIV-2 antibody differentiation and HIV-1 RNA) were both negative. This pattern usually means the first test was a false alarm. We will repeat both tests in 2 to 4 weeks to be sure. In the meantime, please complete the rest of the STI testing."
+        }
+      ],
+      "fallback": {
+        "id": "indeterminate",
+        "label": "Indeterminate — repeat / send to lab for full algorithm completion",
+        "category": "Indeterminate HIV pattern — confirmatory testing incomplete",
+        "next_tests": [
+          "Complete the CDC laboratory testing algorithm: if 4th-gen Ag/Ab is reactive, the lab should reflex to HIV-1/HIV-2 differentiation; if differentiation is indeterminate or negative, reflex to HIV-1 RNA.",
+          "Repeat 4th-gen Ag/Ab in 2–4 weeks if indeterminate persists.",
+          "Continue full STI panel."
+        ],
+        "ehr_plan": "HIV testing incomplete or indeterminate. Plan: complete CDC algorithm (reactive 4th-gen → HIV-1/HIV-2 differentiation → HIV-1 RNA if differentiation indeterminate / negative); repeat in 2–4 weeks if pattern persists; continue full STI panel.",
+        "patient_communication": "We need to complete the rest of your HIV testing before we can interpret the result. We will arrange the follow-up tests now."
+      },
+      "sources": [
+        "CDC HIV Laboratory Testing Algorithm (2018, updated 2024)",
+        "DHHS Adult and Adolescent ARV Guidelines",
+        "CDC STI Treatment Guidelines 2021"
+      ]
     }
   }
 }
