@@ -112,11 +112,17 @@ demos with synthetic data but is not appropriate for real clinical use.
   statin-intensity recommendation per ACC/AHA.
 - Screenshot upload mode: Claude vision parses lab-table screenshots
   into editable structured values.
+- Pregnancy-conditioned TSH thresholds (ATA 2017): when the sidebar
+  Pregnant flag is set, the engine selects pregnancy-specific bands
+  (Normal 0.3–2.5 mIU/L) so subclinical hypothyroidism is flagged at
+  TSH > 2.5 instead of > 4.0.
 
 **Phase 2 (in progress) — clinical content + context conditioning:**
-- Pregnancy-conditioned thresholds where guidelines differ (TSH,
-  others).
+- Trimester-specific TSH bands (current pregnancy band is a single
+  conservative range; ATA 2017 publishes T1/T2/T3 specifics).
 - Age-conditioned thresholds where guidelines differ.
+- Pregnancy thresholds for additional labs (Hgb physiologic anemia,
+  ALP placental rise, Cr lower in pregnancy).
 
 **Phase 3 — qualitative interpreters + panel patterns:**
 - Hep B serology (HBsAg / anti-HBs / anti-HBc / IgM).

@@ -21,17 +21,38 @@ def pick_thresholds(lab_def: dict, context: dict | None) -> tuple[list[dict], bo
     """Pick the appropriate threshold list for the given patient context.
 
     Returns (thresholds_list, used_default_flag). used_default_flag is True
-    when we fell back to the 'default' band set because sex (or other context
-    key) was not provided or not recognized.
+    when we fell back to the 'default' band set because the relevant context
+    key (sex, pregnancy) was not provided or not recognized.
+
+    Lookup order: pregnancy → sex → default. Pregnancy takes precedence
+    because pregnancy-specific reference ranges (e.g. TSH per ATA 2017)
+    differ from non-pregnant sex-stratified bands.
     """
     if "thresholds" in lab_def:
         return lab_def["thresholds"], False
 
     by_context = lab_def.get("thresholds_by_context", {})
-    sex = (context or {}).get("sex")
+    ctx = context or {}
+
+    if ctx.get("pregnancy") is True and "pregnancy" in by_context:
+        return by_context["pregnancy"], False
+
+    sex = ctx.get("sex")
     if sex and sex in by_context:
         return by_context[sex], False
+
     return by_context.get("default", []), True
+
+
+def pregnancy_thresholds_in_use(lab_def: dict, context: dict | None) -> bool:
+    """True iff pick_thresholds will pick the pregnancy-specific band set."""
+    if "thresholds" in lab_def:
+        return False
+    by_context = lab_def.get("thresholds_by_context", {})
+    return (
+        (context or {}).get("pregnancy") is True
+        and "pregnancy" in by_context
+    )
 
 
 def find_severity(value: float, thresholds: list[dict]) -> str:
@@ -132,6 +153,7 @@ def evaluate(
         "follow_up": rendered,
         "follow_up_branch": branch,
         "threshold_used_default": used_default,
+        "pregnancy_thresholds": pregnancy_thresholds_in_use(lab_def, context),
         "differentiation": lab_def.get("differentiation"),
         "thresholds": thresholds,
         "sources": lab_def.get("sources", []),
@@ -277,6 +299,57 @@ def correct_calcium_for_albumin(
     return round(ca + 0.8 * (4.0 - albumin), 2)
 
 
+def _load_pyprevent():
+    """Import pyprevent, with recovery for the 0.1.5 wheel packaging bug.
+
+    pyprevent 0.1.5 installs its compiled extension as
+    `pyprevent.cpython-<tag>.so` instead of `_pyprevent.cpython-<tag>.so`,
+    so `from pyprevent import _pyprevent` raises ImportError on affected
+    environments (notably Linux/Python 3.11 — including the project CI).
+    The .so itself is correctly built and exports the expected Rust
+    functions, so we locate it on disk and inject it as the missing
+    `pyprevent._pyprevent` submodule, then retry the package import.
+    Returns None if pyprevent isn't installed at all or recovery fails.
+    """
+    try:
+        import pyprevent  # type: ignore[import-untyped]
+        return pyprevent
+    except ImportError:
+        pass
+
+    import importlib.util
+    import sys
+    from pathlib import Path
+
+    spec = importlib.util.find_spec("pyprevent")
+    if spec is None or not spec.submodule_search_locations:
+        return None
+    pkg_dir = Path(next(iter(spec.submodule_search_locations)))
+
+    for so_path in pkg_dir.glob("*.so"):
+        if so_path.stem.startswith("_pyprevent"):
+            continue
+        sub_spec = importlib.util.spec_from_file_location(
+            "pyprevent._pyprevent", so_path
+        )
+        if sub_spec is None or sub_spec.loader is None:
+            continue
+        sub_mod = importlib.util.module_from_spec(sub_spec)
+        try:
+            sub_spec.loader.exec_module(sub_mod)
+        except Exception:  # noqa: BLE001
+            continue
+        if not hasattr(sub_mod, "calculate_10_yr_ascvd_rust"):
+            continue
+        sys.modules["pyprevent._pyprevent"] = sub_mod
+        try:
+            import pyprevent  # type: ignore[import-untyped]
+            return pyprevent
+        except ImportError:
+            return None
+    return None
+
+
 def compute_prevent_risk(
     context: dict | None,
     values_by_lab: dict,
@@ -337,9 +410,8 @@ def compute_prevent_risk(
     if missing:
         return empty_result
 
-    try:
-        import pyprevent  # type: ignore[import-untyped]
-    except ImportError:
+    pyprevent = _load_pyprevent()
+    if pyprevent is None:
         empty_result["out_of_range"] = ["pyprevent not installed"]
         return empty_result
 

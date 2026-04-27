@@ -366,6 +366,12 @@ def render_result(result: dict, derived: dict) -> None:
             "Set sex in the sidebar for sharper bands."
         )
 
+    if result.get("pregnancy_thresholds"):
+        st.info(
+            "Pregnancy-specific thresholds applied (ATA 2017). Treatment "
+            "thresholds for subclinical hypothyroidism are lower in pregnancy."
+        )
+
     branch = result.get("follow_up_branch")
     lab_def = rules["labs"].get(result["lab_id"], {})
     if branch == "diabetic":

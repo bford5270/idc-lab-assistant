@@ -1176,15 +1176,25 @@
       "unit": "mIU/L",
       "kind": "numeric",
       "trendable": true,
-      "context_note": "TSH reference is age- and pregnancy-dependent. Pregnancy: 1st tri 0.1–2.5; 2nd 0.2–3.0; 3rd 0.3–3.0. Always interpret with free T4.",
-      "thresholds": [
-        { "severity": "Severe Low",    "max": 0.1 },
-        { "severity": "Mild Low",      "min": 0.1, "max": 0.4 },
-        { "severity": "Normal",        "min": 0.4, "max": 4.0 },
-        { "severity": "Mild High",     "min": 4.0, "max": 10.0 },
-        { "severity": "Moderate High", "min": 10.0, "max": 20.0 },
-        { "severity": "Severe High",   "min": 20.0 }
-      ],
+      "context_note": "TSH reference is age- and pregnancy-dependent. Pregnancy bands per ATA 2017 (Alexander et al., Thyroid). Engine selects pregnancy bands when context.pregnancy is True. Always interpret with free T4.",
+      "thresholds_by_context": {
+        "default": [
+          { "severity": "Severe Low",    "max": 0.1 },
+          { "severity": "Mild Low",      "min": 0.1, "max": 0.4 },
+          { "severity": "Normal",        "min": 0.4, "max": 4.0 },
+          { "severity": "Mild High",     "min": 4.0, "max": 10.0 },
+          { "severity": "Moderate High", "min": 10.0, "max": 20.0 },
+          { "severity": "Severe High",   "min": 20.0 }
+        ],
+        "pregnancy": [
+          { "severity": "Severe Low",    "max": 0.1 },
+          { "severity": "Mild Low",      "min": 0.1, "max": 0.3 },
+          { "severity": "Normal",        "min": 0.3, "max": 2.5 },
+          { "severity": "Mild High",     "min": 2.5, "max": 4.0 },
+          { "severity": "Moderate High", "min": 4.0, "max": 10.0 },
+          { "severity": "Severe High",   "min": 10.0 }
+        ]
+      },
       "follow_up": {
         "Severe Low": {
           "category": "Suppressed TSH (<0.1 mIU/L) — likely overt hyperthyroidism",
@@ -1217,7 +1227,7 @@
           "patient_communication": "Your thyroid test shows significantly underactive thyroid. We will start medication. Go to the emergency department if you feel very cold, very sleepy or confused, or have a slow heart rate or trouble breathing."
         }
       },
-      "sources": ["ATA hypothyroidism guidelines", "ATA hyperthyroidism guidelines"]
+      "sources": ["ATA hypothyroidism guidelines", "ATA hyperthyroidism guidelines", "ATA 2017 pregnancy guidelines (Alexander et al., Thyroid 2017)"]
     },
 
     "bun": {

@@ -27,6 +27,7 @@ from engine import (
     load_rules,
     pick_follow_up_dict,
     pick_thresholds,
+    pregnancy_thresholds_in_use,
     render_follow_up,
     render_template,
 )
@@ -472,6 +473,70 @@ def test_anion_gap_returns_none_for_missing():
     assert compute_anion_gap(None, 100, 24) is None
     assert compute_anion_gap(140, None, 24) is None
     assert compute_anion_gap(140, 100, None) is None
+
+
+# ---------- pregnancy thresholds ----------
+
+
+def test_pick_thresholds_uses_pregnancy_band_when_pregnant(rules):
+    """TSH 3.0 is Normal non-pregnant but Mild High in pregnancy."""
+    tsh = rules["labs"]["tsh"]
+    thresholds, used_default = pick_thresholds(tsh, {"pregnancy": True})
+    assert used_default is False
+    # Pregnancy band: 0.3-2.5 normal, 2.5-4.0 Mild High
+    assert find_severity(3.0, thresholds) == "Mild High"
+
+
+def test_pick_thresholds_default_band_when_not_pregnant(rules):
+    """Same TSH 3.0 should be Normal in the default band."""
+    tsh = rules["labs"]["tsh"]
+    thresholds, _ = pick_thresholds(tsh, {})
+    assert find_severity(3.0, thresholds) == "Normal"
+
+
+def test_pick_thresholds_pregnancy_takes_precedence_over_sex(rules):
+    """If a lab had both pregnancy and sex bands, pregnancy wins."""
+    fake = {
+        "thresholds_by_context": {
+            "default": [{"severity": "Normal"}],
+            "female": [{"severity": "Female-band"}],
+            "pregnancy": [{"severity": "Pregnancy-band"}],
+        }
+    }
+    thresholds, _ = pick_thresholds(
+        fake, {"sex": "female", "pregnancy": True}
+    )
+    assert thresholds[0]["severity"] == "Pregnancy-band"
+
+
+def test_pregnancy_thresholds_in_use_flag(rules):
+    tsh = rules["labs"]["tsh"]
+    assert pregnancy_thresholds_in_use(tsh, {"pregnancy": True}) is True
+    assert pregnancy_thresholds_in_use(tsh, {"pregnancy": False}) is False
+    assert pregnancy_thresholds_in_use(tsh, None) is False
+    # Lab without pregnancy band → False even if pregnant
+    potassium = rules["labs"]["potassium"]
+    assert pregnancy_thresholds_in_use(potassium, {"pregnancy": True}) is False
+
+
+def test_evaluate_tsh_pregnancy_severity_shift(rules):
+    """End-to-end: same value, severity flips when pregnancy=True."""
+    non_preg = evaluate("tsh", 3.0, rules, {})
+    preg = evaluate("tsh", 3.0, rules, {"pregnancy": True})
+    assert non_preg["severity"] == "Normal"
+    assert preg["severity"] == "Mild High"
+    assert preg["pregnancy_thresholds"] is True
+    assert non_preg["pregnancy_thresholds"] is False
+
+
+def test_evaluate_tsh_pregnancy_normal_lower_bound(rules):
+    """TSH 0.35 is Normal in default but Mild Low in pregnancy (< 0.3 floor of 0.3)."""
+    # Non-pregnant default Normal band: 0.4-4.0; 0.35 is Mild Low (0.1-0.4)
+    non_preg = evaluate("tsh", 0.35, rules, {})
+    assert non_preg["severity"] == "Mild Low"
+    # Pregnancy Normal band: 0.3-2.5; 0.35 is Normal
+    preg = evaluate("tsh", 0.35, rules, {"pregnancy": True})
+    assert preg["severity"] == "Normal"
 
 
 # ---------- albumin-corrected calcium ----------
