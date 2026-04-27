@@ -96,21 +96,40 @@ demos with synthetic data but is not appropriate for real clinical use.
 
 ## Roadmap
 
-Phase 1 (current) — schema rebuild, engine + parser rewrite, 21
-quantitative labs with structured follow-up.
+**Shipped:**
+- Phase 1 — schema rebuild, engine + parser rewrite, 21 quantitative labs
+  with structured follow-up.
+- KDIGO eGFR (CKD-EPI 2021), CKD G/A staging, KDIGO AKI staging when a
+  baseline Cr is supplied.
+- Panel-level computations: anion gap, BUN/Cr ratio with prerenal /
+  intrinsic interpretation, albumin-corrected calcium.
+- Glucose `follow_up_by_context` (diabetic vs default) with diabetic
+  status driven from the sidebar.
+- Creatinine differentiation: structured baseline-Cr / UACR inputs,
+  computed eGFR / CKD G_A_ stage, AKI stage, chronic-CKD-panel trigger
+  at G3a.
+- Lipid panel + AHA PREVENT 2023 10-year ASCVD / CVD / HF risk with
+  statin-intensity recommendation per ACC/AHA.
+- Screenshot upload mode: Claude vision parses lab-table screenshots
+  into editable structured values.
 
-Phase 2 — clinical content corrections, broader patient-context
-conditioning (age, pregnancy where guidelines differ), interactive
-rendering of the creatinine differentiation block.
+**Phase 2 (in progress) — clinical content + context conditioning:**
+- Pregnancy-conditioned thresholds where guidelines differ (TSH,
+  others).
+- Age-conditioned thresholds where guidelines differ.
 
-Phase 3 — qualitative interpreters (Hep B serology, syphilis sequence,
-HIV reactive flow, TB risk-stratified PPD, PSA age-specific), plus
-panel-level interpretation (anion gap auto-compute, LFT pattern
-classifier, anemia workup branching on MCV).
+**Phase 3 — qualitative interpreters + panel patterns:**
+- Hep B serology (HBsAg / anti-HBs / anti-HBc / IgM).
+- Syphilis sequence (treponemal / non-treponemal RPR titer).
+- HIV reactive flow (4th-gen Ag/Ab → confirmatory).
+- TB PPD risk-stratified induration cutoffs.
+- PSA age-specific bands.
+- LFT pattern classifier (hepatocellular vs cholestatic via R-factor).
+- Anemia workup branching on MCV (micro / normo / macrocytic).
 
-Phase 4 — per-lab "+ Add prior value" timeline UI for trend-aware labs
-(Cr/eGFR, A1C, PSA, K, Hgb, LFTs, lipids, TSH); KDIGO AKI staging when
-a baseline is supplied.
+**Phase 4 — trends:**
+- Per-lab "+ Add prior value" timeline UI for trend-aware labs
+  (Cr/eGFR, A1C, PSA, K, Hgb, LFTs, lipids, TSH).
 
 ## Disclaimer
 

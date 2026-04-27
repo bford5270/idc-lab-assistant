@@ -393,6 +393,36 @@ def render_result(result: dict, derived: dict) -> None:
     elif severity == "Normal":
         st.success("No action required.")
 
+    correction = result.get("correction")
+    if correction and correction.get("type") == "albumin_corrected":
+        corr_severity = correction["severity"]
+        corr_urgency = URGENCY_BY_SEVERITY.get(corr_severity, "Indeterminate")
+        shifted = corr_severity != severity
+        message = (
+            f"**Albumin-corrected Ca:** {correction['value']} mg/dL  ·  "
+            f"**Severity:** {corr_severity}  ·  **Urgency:** {corr_urgency}  \n"
+            f"Albumin = {correction['albumin']} g/dL. "
+            f"Formula: {correction['formula']}."
+        )
+        (st.warning if shifted else st.info)(message)
+        if shifted and correction.get("follow_up"):
+            with st.expander(
+                f"Follow-up for corrected Ca ({corr_severity})", expanded=False
+            ):
+                fu = correction["follow_up"]
+                if fu.get("category"):
+                    st.markdown(f"**Category:** {fu['category']}")
+                if fu.get("next_tests"):
+                    st.markdown("**Next tests / workup:**")
+                    for t in fu["next_tests"]:
+                        st.markdown(f"- {t}")
+                if fu.get("ehr_plan"):
+                    st.markdown("**EHR plan (paste-ready):**")
+                    st.code(fu["ehr_plan"], language="markdown")
+                if fu.get("patient_communication"):
+                    st.markdown("**Patient communication (paste-ready):**")
+                    st.code(fu["patient_communication"], language="markdown")
+
     differentiation = result.get("differentiation")
     if differentiation and result["lab_id"] == "creatinine":
         render_creatinine_differentiation(result, derived, differentiation)

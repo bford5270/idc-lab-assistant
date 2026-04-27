@@ -371,7 +371,7 @@
       "unit": "mg/dL",
       "kind": "numeric",
       "trendable": true,
-      "albumin_correction_note": "Always correct for albumin: corrected Ca = measured Ca + 0.8 × (4.0 − albumin). When albumin is provided in patient context, engine should apply correction and evaluate corrected value (Phase 2 enhancement).",
+      "albumin_correction_note": "Albumin-corrected Ca = measured Ca + 0.8 × (4.0 − albumin). Engine applies this in evaluate_panel when calcium and albumin are both in the input set; UI surfaces the corrected value and severity inline on the calcium card.",
       "thresholds": [
         { "severity": "Critical Low",  "max": 7.0 },
         { "severity": "Severe Low",    "min": 7.0, "max": 7.5 },
@@ -778,7 +778,7 @@
       "unit": "mEq/L",
       "kind": "numeric",
       "trendable": true,
-      "anion_gap_note": "When Na, Cl, and HCO3 are all available, engine should compute anion gap = Na − (Cl + HCO3); normal 8–12. Phase 3 enhancement.",
+      "anion_gap_note": "Anion gap = Na − (Cl + HCO3); normal 8–12. Engine computes this in evaluate_panel when Na, Cl, and HCO3 are all in the input set; UI surfaces it in the session-derived block.",
       "thresholds": [
         { "severity": "Critical Low",  "max": 10 },
         { "severity": "Severe Low",    "min": 10, "max": 15 },
@@ -1227,7 +1227,7 @@
       "unit": "mg/dL",
       "kind": "numeric",
       "trendable": true,
-      "ratio_note": "BUN/Cr ratio: >20 suggests prerenal azotemia (volume depletion, GI bleed) or high protein load; <10 suggests intrinsic renal disease, malnutrition, or liver disease. Engine should compute BUN/Cr when both available (Phase 3).",
+      "ratio_note": "BUN/Cr ratio: >20 suggests prerenal azotemia (volume depletion, GI bleed) or high protein load; <10 suggests intrinsic renal disease, malnutrition, or liver disease. Engine computes BUN/Cr in evaluate_panel when both are present and surfaces the prerenal/intrinsic interpretation under both labs.",
       "thresholds": [
         { "severity": "Normal",        "min": 7,  "max": 20 },
         { "severity": "Mild High",     "min": 20, "max": 40 },

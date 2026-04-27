@@ -19,6 +19,7 @@ from engine import (
     compute_egfr,
     compute_kdigo_aki_stage,
     compute_prevent_risk,
+    correct_calcium_for_albumin,
     evaluate,
     evaluate_panel,
     find_severity,
@@ -471,6 +472,68 @@ def test_anion_gap_returns_none_for_missing():
     assert compute_anion_gap(None, 100, 24) is None
     assert compute_anion_gap(140, None, 24) is None
     assert compute_anion_gap(140, 100, None) is None
+
+
+# ---------- albumin-corrected calcium ----------
+
+
+def test_corrected_ca_low_albumin_raises_value():
+    # Ca 8.0, albumin 2.0 -> 8.0 + 0.8*(4-2) = 9.6
+    assert correct_calcium_for_albumin(8.0, 2.0) == 9.6
+
+
+def test_corrected_ca_normal_albumin_unchanged():
+    # albumin = 4.0 -> correction is zero
+    assert correct_calcium_for_albumin(9.0, 4.0) == 9.0
+
+
+def test_corrected_ca_high_albumin_lowers_value():
+    # Ca 10.0, albumin 5.0 -> 10.0 + 0.8*(4-5) = 9.2
+    assert correct_calcium_for_albumin(10.0, 5.0) == 9.2
+
+
+def test_corrected_ca_returns_none_for_missing():
+    assert correct_calcium_for_albumin(None, 4.0) is None
+    assert correct_calcium_for_albumin(8.0, None) is None
+    assert correct_calcium_for_albumin(0, 4.0) is None
+    assert correct_calcium_for_albumin(8.0, 0) is None
+
+
+def test_evaluate_panel_attaches_correction_when_meaningful(rules):
+    panel = evaluate_panel(
+        [("calcium", 8.0), ("albumin", 2.5)], rules,
+    )
+    ca_result = next(r for r in panel["results"] if r["lab_id"] == "calcium")
+    correction = ca_result.get("correction")
+    assert correction is not None
+    assert correction["type"] == "albumin_corrected"
+    assert correction["measured_value"] == 8.0
+    assert correction["albumin"] == 2.5
+    # 8.0 + 0.8 * (4.0 - 2.5) = 9.2 -> Normal
+    assert correction["value"] == 9.2
+    assert correction["severity"] == "Normal"
+
+
+def test_evaluate_panel_skips_correction_when_albumin_normal(rules):
+    """At albumin 4.0 the correction is zero — no block attached."""
+    panel = evaluate_panel(
+        [("calcium", 8.0), ("albumin", 4.0)], rules,
+    )
+    ca_result = next(r for r in panel["results"] if r["lab_id"] == "calcium")
+    assert "correction" not in ca_result
+
+
+def test_evaluate_panel_skips_correction_without_albumin(rules):
+    panel = evaluate_panel([("calcium", 8.0)], rules)
+    ca_result = next(r for r in panel["results"] if r["lab_id"] == "calcium")
+    assert "correction" not in ca_result
+
+
+def test_evaluate_panel_skips_correction_without_calcium(rules):
+    panel = evaluate_panel([("albumin", 2.5)], rules)
+    # No calcium result to attach to; albumin result has no correction either.
+    alb = next(r for r in panel["results"] if r["lab_id"] == "albumin")
+    assert "correction" not in alb
 
 
 # ---------- evaluate_panel ----------

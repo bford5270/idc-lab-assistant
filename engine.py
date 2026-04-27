@@ -262,6 +262,21 @@ def compute_anion_gap(
     return round(na - cl - hco3, 1)
 
 
+def correct_calcium_for_albumin(
+    ca: float | None, albumin: float | None
+) -> float | None:
+    """Albumin-corrected calcium.
+
+    Formula: Ca_corr = Ca + 0.8 × (4.0 − albumin), with Ca in mg/dL and
+    albumin in g/dL. Hypoalbuminemia depresses total Ca without changing
+    ionized Ca, so the measured total can read as low even when ionized Ca
+    is normal. Returns None if either input is missing or non-positive.
+    """
+    if ca is None or albumin is None or ca <= 0 or albumin <= 0:
+        return None
+    return round(ca + 0.8 * (4.0 - albumin), 2)
+
+
 def compute_prevent_risk(
     context: dict | None,
     values_by_lab: dict,
@@ -428,6 +443,8 @@ def evaluate_panel(
     na = values_by_lab.get("sodium")
     cl = values_by_lab.get("chloride")
     hco3 = values_by_lab.get("bicarbonate")
+    ca = values_by_lab.get("calcium")
+    albumin = values_by_lab.get("albumin")
     age = ctx.get("age")
     sex = ctx.get("sex")
     baseline_cr = ctx.get("baseline_creatinine")
@@ -440,6 +457,21 @@ def evaluate_panel(
     aki_stage = compute_kdigo_aki_stage(cr, baseline_cr) if cr is not None else None
     bun_cr = compute_bun_cr_ratio(bun, cr)
     ag = compute_anion_gap(na, cl, hco3)
+    corrected_ca = correct_calcium_for_albumin(ca, albumin)
+    if corrected_ca is not None and abs(corrected_ca - ca) >= 0.1:
+        correction_eval = evaluate("calcium", corrected_ca, rules, context)
+        for r in results:
+            if r.get("lab_id") == "calcium":
+                r["correction"] = {
+                    "type": "albumin_corrected",
+                    "measured_value": ca,
+                    "value": corrected_ca,
+                    "albumin": albumin,
+                    "severity": correction_eval["severity"],
+                    "follow_up": correction_eval["follow_up"],
+                    "formula": "Ca_corr = Ca + 0.8 × (4.0 − albumin)",
+                }
+                break
 
     missing: list[str] = []
     if cr is not None:
