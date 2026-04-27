@@ -1306,6 +1306,219 @@
         }
       },
       "sources": ["UpToDate chloride disorders"]
+    },
+
+    "total_cholesterol": {
+      "display_name": "Total Cholesterol",
+      "loinc": "2093-3",
+      "synonyms": ["total cholesterol", "tc", "cholesterol total", "chol"],
+      "unit": "mg/dL",
+      "kind": "numeric",
+      "trendable": true,
+      "panel_note": "Total cholesterol is one component of the lipid panel; LDL is the primary actionable target. PREVENT 10-yr ASCVD risk is computed automatically when sufficient cardiovascular inputs are available (sidebar).",
+      "thresholds": [
+        { "severity": "Normal",        "max": 200 },
+        { "severity": "Mild High",     "min": 200, "max": 240 },
+        { "severity": "Moderate High", "min": 240, "max": 290 },
+        { "severity": "Severe High",   "min": 290 }
+      ],
+      "follow_up": {
+        "Mild High": {
+          "category": "Borderline-high total cholesterol (200–239 mg/dL)",
+          "next_tests": ["Confirm full lipid panel: LDL, HDL, triglycerides, non-HDL.", "Compute PREVENT 10-yr ASCVD risk (see derived values panel).", "A1C, BMP/eGFR, BMI, BP if not recent."],
+          "ehr_plan": "Total cholesterol = {value} mg/dL (Mild High). Plan: assess full lipid panel (LDL is the primary target); PREVENT 10-yr ASCVD risk for statin decision per 2026 ACC/AHA dyslipidemia guideline; lifestyle counseling.",
+          "patient_communication": "Your total cholesterol is slightly above normal. We will look at your LDL ('bad' cholesterol), HDL ('good' cholesterol), and triglycerides individually to decide on the best treatment. Lifestyle changes — heart-healthy diet, regular activity, weight management — help most people."
+        },
+        "Moderate High": {
+          "category": "High total cholesterol (240–289 mg/dL)",
+          "next_tests": ["Full lipid panel with LDL.", "PREVENT 10-yr ASCVD risk (sidebar).", "Cardiometabolic workup (A1C, BMP, BP, BMI)."],
+          "ehr_plan": "Total cholesterol = {value} mg/dL (Moderate High). Plan: full lipid panel; PREVENT 10-yr ASCVD risk for statin decision; lifestyle counseling.",
+          "patient_communication": "Your total cholesterol is high. We will check your LDL, HDL, and triglyceride numbers and use them with your other risk factors to decide whether you need a statin medication. Lifestyle changes are part of the plan either way."
+        },
+        "Severe High": {
+          "category": "Markedly elevated total cholesterol (≥290 mg/dL) — consider familial hypercholesterolemia",
+          "next_tests": ["Full lipid panel with LDL (FH workup if LDL ≥190).", "PREVENT 10-yr ASCVD risk.", "Family history (premature ASCVD).", "TSH (rule out hypothyroidism); UA (nephrotic syndrome); fasting glucose/A1C; LFTs."],
+          "ehr_plan": "Total cholesterol = {value} mg/dL (Severe High). LDL likely ≥190 — concern for familial hypercholesterolemia. Plan: high-intensity statin regardless of computed PREVENT risk; family screening; consider lipid-specialist referral; rule out secondary causes (hypothyroid, nephrotic, uncontrolled DM, cholestatic liver disease).",
+          "patient_communication": "Your total cholesterol is very high. We will likely start a strong cholesterol-lowering medication (statin) and check whether this runs in your family. We will also screen for other causes such as thyroid disease."
+        }
+      },
+      "sources": ["2026 ACC/AHA Dyslipidemia Guideline", "AHA PREVENT 2023 (Khan et al.)"]
+    },
+
+    "ldl_cholesterol": {
+      "display_name": "LDL Cholesterol",
+      "loinc": "13457-7",
+      "synonyms": ["ldl", "ldl cholesterol", "ldl-c", "ldl c"],
+      "unit": "mg/dL",
+      "kind": "numeric",
+      "trendable": true,
+      "panel_note": "LDL is the primary actionable target. PREVENT 10-yr ASCVD risk drives statin intensity per 2026 ACC/AHA guideline.",
+      "thresholds": [
+        { "severity": "Normal",        "max": 130 },
+        { "severity": "Mild High",     "min": 130, "max": 160 },
+        { "severity": "Moderate High", "min": 160, "max": 190 },
+        { "severity": "Severe High",   "min": 190, "max": 250 },
+        { "severity": "Critical High", "min": 250 }
+      ],
+      "follow_up": {
+        "Mild High": {
+          "category": "Mildly elevated LDL (130–159 mg/dL)",
+          "next_tests": ["PREVENT 10-yr ASCVD risk (sidebar inputs).", "30-yr ASCVD risk if age 30–59 (consider for younger pts).", "Cardiometabolic baseline (A1C, BMP, BP, BMI, urine ACR if diabetic)."],
+          "ehr_plan": "LDL = {value} mg/dL (Mild High). Plan per 2026 ACC/AHA dyslipidemia guideline: statin decision driven by PREVENT 10-yr ASCVD risk — ≥10% high-intensity, 3–10% moderate-intensity, <3% lifestyle (consider statin if 30-yr risk ≥10%). Lifestyle counseling.",
+          "patient_communication": "Your LDL ('bad' cholesterol) is slightly above normal. We will use a calculator (PREVENT) along with your blood pressure, smoking status, weight, and other factors to decide whether starting a statin medication makes sense. Lifestyle changes — heart-healthy diet, regular activity, weight management — help regardless."
+        },
+        "Moderate High": {
+          "category": "Moderately elevated LDL (160–189 mg/dL)",
+          "next_tests": ["PREVENT 10-yr and 30-yr ASCVD risk.", "Family history of premature ASCVD.", "TSH; cardiometabolic baseline."],
+          "ehr_plan": "LDL = {value} mg/dL (Moderate High). Per 2026 ACC/AHA guideline: moderate-intensity statin reasonable in most adults with LDL 160–189 even at low PREVENT risk if 30-yr risk ≥10%; high-intensity statin if PREVENT 10-yr ≥10%. Lifestyle counseling. Rule out secondary causes (hypothyroid, nephrotic).",
+          "patient_communication": "Your LDL is moderately high. Most people with this level benefit from a statin medication. We will look at your overall heart-disease risk to choose the dose. Lifestyle changes are part of the plan."
+        },
+        "Severe High": {
+          "category": "Severely elevated LDL (190–249 mg/dL) — likely familial hypercholesterolemia",
+          "next_tests": ["High-intensity statin (regardless of PREVENT risk per 2026 ACC/AHA).", "Lipoprotein(a) once in lifetime.", "Family screening for FH (cascade screening of first-degree relatives).", "TSH, UA, fasting glucose, LFTs (rule out secondary).", "Consider lipidology/genetics referral."],
+          "ehr_plan": "LDL = {value} mg/dL (Severe High) — clinical FH likely. Plan: initiate high-intensity statin regardless of PREVENT 10-yr risk per 2026 ACC/AHA guideline; obtain Lp(a); cascade screening of first-degree relatives; rule out secondary causes; consider lipid specialist / genetics referral.",
+          "patient_communication": "Your LDL is very high — at a level that often runs in families (familial hypercholesterolemia). We will start a strong statin medication and check whether your close family members should be tested too. This is treatable and important to address early."
+        },
+        "Critical High": {
+          "category": "Critically elevated LDL (≥250 mg/dL) — severe / homozygous FH consideration",
+          "next_tests": ["High-intensity statin + ezetimibe; consider PCSK9 inhibitor.", "Lipoprotein(a).", "Genetic testing.", "Lipidology referral (urgent if homozygous FH suspected, especially if pediatric).", "Family cascade screening.", "Consider apheresis center if LDL not controlled."],
+          "ehr_plan": "LDL = {value} mg/dL (Critical High). Concern for severe heterozygous or homozygous FH. Plan: aggressive lipid-lowering — high-intensity statin + ezetimibe, consider PCSK9 inhibitor; urgent lipidology referral; genetic testing and family cascade screening; rule out secondary causes.",
+          "patient_communication": "Your LDL is at a critical level. This is a serious form of familial high cholesterol that needs specialist care. We will start medications now and refer you to a lipid specialist. Your close family members should also be tested."
+        }
+      },
+      "sources": ["2026 ACC/AHA Dyslipidemia Guideline", "AHA PREVENT 2023"]
+    },
+
+    "hdl_cholesterol": {
+      "display_name": "HDL Cholesterol",
+      "loinc": "2085-9",
+      "synonyms": ["hdl", "hdl cholesterol", "hdl-c", "hdl c"],
+      "unit": "mg/dL",
+      "kind": "numeric",
+      "trendable": true,
+      "context_note": "HDL low-thresholds are sex-stratified: <40 men, <50 women per ATP-III. HDL ≥60 is a 'negative risk factor.' HDL itself is not a treatment target; intervention focuses on LDL and PREVENT-driven risk.",
+      "thresholds_by_context": {
+        "default": [
+          { "severity": "Severe Low",  "max": 30 },
+          { "severity": "Mild Low",    "min": 30, "max": 40 },
+          { "severity": "Normal",      "min": 40, "max": 60 },
+          { "severity": "Mild High",   "min": 60 }
+        ],
+        "female": [
+          { "severity": "Severe Low",  "max": 30 },
+          { "severity": "Mild Low",    "min": 30, "max": 50 },
+          { "severity": "Normal",      "min": 50, "max": 60 },
+          { "severity": "Mild High",   "min": 60 }
+        ],
+        "male": [
+          { "severity": "Severe Low",  "max": 30 },
+          { "severity": "Mild Low",    "min": 30, "max": 40 },
+          { "severity": "Normal",      "min": 40, "max": 60 },
+          { "severity": "Mild High",   "min": 60 }
+        ]
+      },
+      "follow_up": {
+        "Severe Low": {
+          "category": "Severely low HDL (<30 mg/dL)",
+          "next_tests": ["Full lipid panel (often paired with elevated TG).", "PREVENT 10-yr ASCVD risk.", "TSH; LFTs; cardiometabolic workup."],
+          "ehr_plan": "HDL = {value} mg/dL (Severe Low). Often a marker of metabolic syndrome. Plan: address LDL and overall cardiometabolic risk via PREVENT-driven decisions; aerobic exercise, weight loss, smoking cessation, Mediterranean diet improve HDL modestly; HDL is not a direct treatment target.",
+          "patient_communication": "Your HDL ('good' cholesterol) is very low. The most effective steps are regular aerobic exercise, weight management, not smoking, and a heart-healthy diet. We will focus on your overall heart-disease risk and your LDL."
+        },
+        "Mild Low": {
+          "category": "Low HDL — sex-specific cutoff applied",
+          "next_tests": ["Full lipid panel.", "PREVENT 10-yr ASCVD risk.", "Cardiometabolic baseline."],
+          "ehr_plan": "HDL = {value} mg/dL (Mild Low for sex). Plan: address LDL and overall cardiometabolic risk via PREVENT; lifestyle (exercise, weight, no smoking, Mediterranean-style diet).",
+          "patient_communication": "Your HDL ('good' cholesterol) is on the low side. Aerobic exercise, weight management, not smoking, and a heart-healthy diet help raise it. We will focus mainly on your overall heart-disease risk."
+        },
+        "Mild High": {
+          "category": "High HDL (≥60 mg/dL) — negative risk factor",
+          "next_tests": ["No specific action required.", "Full lipid panel for LDL focus."],
+          "ehr_plan": "HDL = {value} mg/dL (Mild High; ≥60 is a 'negative risk factor' per ATP-III). No action required for HDL itself; focus on LDL and PREVENT-driven decisions.",
+          "patient_communication": "Your HDL ('good' cholesterol) is high — that is favorable for your heart. No action needed for this number; we will still look at your LDL and other risk factors."
+        }
+      },
+      "sources": ["2026 ACC/AHA Dyslipidemia Guideline", "ATP-III"]
+    },
+
+    "triglycerides": {
+      "display_name": "Triglycerides",
+      "loinc": "2571-8",
+      "synonyms": ["triglycerides", "trig", "tg", "tgs"],
+      "unit": "mg/dL",
+      "kind": "numeric",
+      "trendable": true,
+      "fasting_note": "Fasting status affects interpretation; non-fasting TG ≥175 is abnormal per 2026 guideline.",
+      "thresholds": [
+        { "severity": "Normal",        "max": 150 },
+        { "severity": "Mild High",     "min": 150, "max": 200 },
+        { "severity": "Moderate High", "min": 200, "max": 500 },
+        { "severity": "Severe High",   "min": 500, "max": 1000 },
+        { "severity": "Critical High", "min": 1000 }
+      ],
+      "follow_up": {
+        "Mild High": {
+          "category": "Mildly elevated triglycerides (150–199 mg/dL)",
+          "next_tests": ["Confirm fasting status.", "Full lipid panel with LDL.", "A1C, fasting glucose; TSH; LFTs.", "PREVENT 10-yr ASCVD risk."],
+          "ehr_plan": "TG = {value} mg/dL (Mild High). Plan: lifestyle (weight, exercise, low-glycemic diet, alcohol reduction); rule out secondary causes (DM, hypothyroid, alcohol, meds); PREVENT-driven statin decision based on overall risk.",
+          "patient_communication": "Your triglycerides are slightly high. Limit added sugars, refined carbs, and alcohol; focus on regular exercise and weight management. We will check related tests."
+        },
+        "Moderate High": {
+          "category": "Moderate hypertriglyceridemia (200–499 mg/dL)",
+          "next_tests": ["Confirm fasting status.", "Full lipid panel; non-HDL-C calculation.", "A1C, TSH, LFTs.", "Medication review (estrogen, beta-blockers, retinoids, antiretrovirals)."],
+          "ehr_plan": "TG = {value} mg/dL (Moderate High). Plan: address LDL/non-HDL primarily (statin); intensive lifestyle; rule out secondary causes (uncontrolled DM, hypothyroid, alcohol, meds); REDUCE-IT criteria — consider icosapent ethyl if TG 150–499 with established ASCVD or DM + ≥1 risk factor on max-tolerated statin.",
+          "patient_communication": "Your triglycerides are moderately high. We will focus on your LDL with a possible statin and on lifestyle (low-sugar/low-refined-carb diet, weight management, limit alcohol). We will also check thyroid and diabetes labs."
+        },
+        "Severe High": {
+          "category": "Severe hypertriglyceridemia (500–999 mg/dL) — pancreatitis risk",
+          "next_tests": ["Confirm fasting status.", "Lipase (rule out pancreatitis if symptomatic).", "Glucose/A1C; TSH; LFTs.", "Medication review.", "Consider apoB and Lp(a)."],
+          "ehr_plan": "TG = {value} mg/dL (Severe High) — increased pancreatitis risk. Plan: fibrate (fenofibrate) and/or icosapent ethyl; tight glycemic control if diabetic; alcohol cessation; very-low-fat diet; high-intensity statin per ASCVD risk. If abdominal pain — refer to ED for pancreatitis workup.",
+          "patient_communication": "Your triglycerides are very high — high enough to put you at risk for pancreatitis (a painful inflammation of the pancreas). We will start medication, focus on diet (very low fat, no alcohol), and treat any contributing conditions. Go to the emergency department right away if you have severe abdominal pain, persistent nausea or vomiting."
+        },
+        "Critical High": {
+          "category": "Critical hypertriglyceridemia (≥1000 mg/dL) — pancreatitis emergency risk",
+          "next_tests": ["Lipase + amylase (pancreatitis workup).", "Glucose/A1C; ABG if symptomatic.", "Calcium (low calcium can occur with pancreatitis).", "BMP."],
+          "ehr_plan": "TG = {value} mg/dL (Critical High). Acute pancreatitis risk is significant. If any abdominal pain, nausea, vomiting, or back pain — patient instructed to proceed immediately to the nearest emergency department. Otherwise: urgent lipid-specialist evaluation, fibrate + icosapent ethyl + insulin if hyperglycemic; very-low-fat diet (≤15% fat); alcohol cessation; consider apheresis if persistently >1000 with symptoms.",
+          "patient_communication": "Your triglycerides are at a level that can cause pancreatitis (a serious inflammation of the pancreas). Please go to the nearest emergency department right away if you have any abdominal or back pain, nausea, or vomiting. Otherwise come to the clinic this week. Stop alcohol completely and start a very low-fat diet. We will start medications urgently."
+        }
+      },
+      "sources": ["2026 ACC/AHA Dyslipidemia Guideline", "REDUCE-IT trial"]
+    },
+
+    "non_hdl_cholesterol": {
+      "display_name": "Non-HDL Cholesterol",
+      "loinc": "43396-1",
+      "synonyms": ["non-hdl", "non hdl", "non-hdl cholesterol", "non hdl cholesterol"],
+      "unit": "mg/dL",
+      "kind": "numeric",
+      "trendable": true,
+      "panel_note": "Non-HDL = Total cholesterol − HDL. Captures all atherogenic lipoproteins. Targets are typically LDL goal + 30 mg/dL.",
+      "thresholds": [
+        { "severity": "Normal",        "max": 130 },
+        { "severity": "Mild High",     "min": 130, "max": 160 },
+        { "severity": "Moderate High", "min": 160, "max": 190 },
+        { "severity": "Severe High",   "min": 190 }
+      ],
+      "follow_up": {
+        "Mild High": {
+          "category": "Mildly elevated non-HDL cholesterol (130–159 mg/dL)",
+          "next_tests": ["Full lipid panel with LDL.", "PREVENT 10-yr ASCVD risk."],
+          "ehr_plan": "Non-HDL-C = {value} mg/dL (Mild High). Plan: address LDL primarily; PREVENT-driven statin decision; lifestyle counseling.",
+          "patient_communication": "Your non-HDL cholesterol is slightly high. We will focus on your LDL and overall heart-disease risk."
+        },
+        "Moderate High": {
+          "category": "Moderate non-HDL elevation (160–189 mg/dL)",
+          "next_tests": ["Full lipid panel.", "PREVENT 10-yr and 30-yr ASCVD risk.", "Cardiometabolic baseline."],
+          "ehr_plan": "Non-HDL-C = {value} mg/dL (Moderate High). Plan: statin decision per PREVENT + 2026 ACC/AHA; lifestyle.",
+          "patient_communication": "Your non-HDL cholesterol is moderately elevated. We will likely start or intensify a statin and continue lifestyle changes."
+        },
+        "Severe High": {
+          "category": "Severe non-HDL elevation (≥190 mg/dL) — possible FH or severe combined dyslipidemia",
+          "next_tests": ["Full lipid panel with LDL.", "Lp(a).", "TSH, UA, fasting glucose, LFTs (secondary).", "Family screening if FH suspected."],
+          "ehr_plan": "Non-HDL-C = {value} mg/dL (Severe High). Plan: high-intensity statin regardless of PREVENT risk; rule out secondary causes; FH workup if LDL also ≥190; cascade screening; consider lipid specialist.",
+          "patient_communication": "Your non-HDL cholesterol is very high. We will start a strong statin and check whether this runs in your family. We will also look for other causes."
+        }
+      },
+      "sources": ["2026 ACC/AHA Dyslipidemia Guideline"]
     }
   }
 }
