@@ -436,6 +436,12 @@ def render_result(result: dict, derived: dict) -> None:
     if result["lab_id"] in ("creatinine", "bun") and derived.get("bun_cr_ratio_interpretation"):
         st.info(derived["bun_cr_ratio_interpretation"])
 
+    if (
+        result["lab_id"] in ("alt", "ast", "alkaline_phosphatase")
+        and derived.get("lft_pattern_interpretation")
+    ):
+        st.info(derived["lft_pattern_interpretation"])
+
     _plot_lab_bar(result)
 
     if result.get("sources"):
@@ -450,6 +456,7 @@ def render_session_derived(derived: dict) -> None:
     has_anything = (
         derived.get("bun_cr_ratio") is not None
         or derived.get("anion_gap") is not None
+        or derived.get("lft_r_factor") is not None
         or derived.get("egfr") is not None
         or derived.get("kdigo_aki_stage")
         or prevent.get("available")
@@ -464,6 +471,15 @@ def render_session_derived(derived: dict) -> None:
     if derived.get("anion_gap") is not None:
         cols[1].metric("Anion gap", str(derived["anion_gap"]),
                        help="Normal 8–12. Computed when Na, Cl, HCO3 all present.")
+
+    if derived.get("lft_r_factor") is not None:
+        pattern = derived.get("lft_pattern") or "—"
+        st.markdown(
+            f"**LFT pattern (R-factor):** R = {derived['lft_r_factor']}  ·  "
+            f"**Pattern:** {pattern.title()}"
+        )
+        if derived.get("lft_pattern_interpretation"):
+            st.info(derived["lft_pattern_interpretation"])
 
     if derived.get("egfr") is not None:
         st.markdown(
@@ -508,6 +524,11 @@ def _build_derived_lines(derived: dict) -> list[str]:
         lines.append(derived["bun_cr_ratio_interpretation"])
     if derived.get("anion_gap") is not None:
         lines.append(f"Anion gap = {derived['anion_gap']} (normal 8–12).")
+    if derived.get("lft_pattern") and derived.get("lft_r_factor") is not None:
+        lines.append(
+            f"LFT R-factor = {derived['lft_r_factor']} → "
+            f"{derived['lft_pattern']} pattern."
+        )
     if derived.get("egfr") is not None:
         ga = derived.get("ckd_ga_stage") or derived.get("ckd_g_stage") or "incomplete data"
         lines.append(

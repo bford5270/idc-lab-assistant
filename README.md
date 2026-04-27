@@ -116,6 +116,11 @@ demos with synthetic data but is not appropriate for real clinical use.
   Pregnant flag is set, the engine selects pregnancy-specific bands
   (Normal 0.3–2.5 mIU/L) so subclinical hypothyroidism is flagged at
   TSH > 2.5 instead of > 4.0.
+- LFT pattern classifier (R-factor): when ALT and ALP are both in the
+  panel, the engine computes R = (ALT/ALT_ULN) / (ALP/ALP_ULN) and
+  classifies hepatocellular (R>5) / mixed (2–5) / cholestatic (R<2)
+  per AASLD/EASL DILI guidance, with workup language surfaced under
+  ALT, AST, and ALP results plus the session-derived block.
 
 **Phase 2 (in progress) — clinical content + context conditioning:**
 - Trimester-specific TSH bands (current pregnancy band is a single
@@ -130,7 +135,6 @@ demos with synthetic data but is not appropriate for real clinical use.
 - HIV reactive flow (4th-gen Ag/Ab → confirmatory).
 - TB PPD risk-stratified induration cutoffs.
 - PSA age-specific bands.
-- LFT pattern classifier (hepatocellular vs cholestatic via R-factor).
 - Anemia workup branching on MCV (micro / normo / macrocytic).
 
 **Phase 4 — trends:**

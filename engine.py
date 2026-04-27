@@ -284,6 +284,77 @@ def compute_anion_gap(
     return round(na - cl - hco3, 1)
 
 
+# ---------- LFT pattern (R-factor) ----------
+
+# Sex-specific ALT ULN matching rules.json Mild-High cutoffs
+# (lab-reported ULN per ACG 2017). Default to male ULN when sex unknown
+# to be permissive — under-flagging an unknown patient is preferable to
+# over-flagging when sex isn't documented.
+_ALT_ULN: dict[str, float] = {"female": 33.0, "male": 42.0}
+_ALT_ULN_DEFAULT = 42.0
+_ALP_ULN = 130.0  # adult, non-pregnancy; matches rules.json Normal upper bound
+
+
+def compute_lft_r_factor(
+    alt: float | None, alp: float | None, sex: str | None
+) -> float | None:
+    """R-factor for liver-injury pattern classification.
+
+    R = (ALT / ALT_ULN) / (ALP / ALP_ULN). Used per AASLD/EASL DILI and
+    cholestatic-disease guidance to differentiate hepatocellular vs
+    cholestatic vs mixed injury when one or both enzymes are elevated.
+
+    Returns None when ALT or ALP is missing/non-positive, or when both
+    are within their ULN (R-factor isn't clinically meaningful in that
+    case — there's no injury to classify).
+    """
+    if alt is None or alp is None or alt <= 0 or alp <= 0:
+        return None
+    alt_uln = _ALT_ULN.get(sex or "", _ALT_ULN_DEFAULT)
+    if alt < alt_uln and alp < _ALP_ULN:
+        return None
+    return round((alt / alt_uln) / (alp / _ALP_ULN), 2)
+
+
+def classify_lft_pattern(r: float | None) -> str | None:
+    """AASLD/EASL R-factor pattern classification:
+    R > 5 → hepatocellular, R < 2 → cholestatic, 2 ≤ R ≤ 5 → mixed."""
+    if r is None:
+        return None
+    if r > 5.0:
+        return "hepatocellular"
+    if r < 2.0:
+        return "cholestatic"
+    return "mixed"
+
+
+def interpret_lft_pattern(pattern: str | None, r: float | None) -> str | None:
+    if pattern is None or r is None:
+        return None
+    if pattern == "hepatocellular":
+        return (
+            f"R = {r} (>5) — hepatocellular pattern. Workup: viral hepatitis "
+            "(HBV, HCV; HAV/HEV if acute), drug/supplement review including "
+            "acetaminophen, alcohol screen, MASLD case-finding (BMI, A1C, "
+            "lipids), autoimmune (ANA, ASMA, IgG), iron studies, ceruloplasmin "
+            "if age <40, A1AT. FIB-4 if persistent."
+        )
+    if pattern == "cholestatic":
+        return (
+            f"R = {r} (<2) — cholestatic pattern. Workup: GGT to confirm "
+            "hepatic origin of ALP elevation; RUQ ultrasound (gallstones, "
+            "biliary dilation, mass); MRCP if intra/extrahepatic obstruction "
+            "suspected; AMA for primary biliary cholangitis; drug review "
+            "(estrogens, anabolic steroids, antibiotics)."
+        )
+    return (
+        f"R = {r} (2–5) — mixed hepatocellular/cholestatic pattern. "
+        "Pursue both hepatocellular and cholestatic workups in parallel: "
+        "viral hepatitis serology, MASLD risk stratification, GGT, RUQ "
+        "ultrasound, drug/supplement review."
+    )
+
+
 def correct_calcium_for_albumin(
     ca: float | None, albumin: float | None
 ) -> float | None:
@@ -517,6 +588,8 @@ def evaluate_panel(
     hco3 = values_by_lab.get("bicarbonate")
     ca = values_by_lab.get("calcium")
     albumin = values_by_lab.get("albumin")
+    alt = values_by_lab.get("alt")
+    alp = values_by_lab.get("alkaline_phosphatase")
     age = ctx.get("age")
     sex = ctx.get("sex")
     baseline_cr = ctx.get("baseline_creatinine")
@@ -529,6 +602,8 @@ def evaluate_panel(
     aki_stage = compute_kdigo_aki_stage(cr, baseline_cr) if cr is not None else None
     bun_cr = compute_bun_cr_ratio(bun, cr)
     ag = compute_anion_gap(na, cl, hco3)
+    lft_r = compute_lft_r_factor(alt, alp, sex)
+    lft_pattern = classify_lft_pattern(lft_r)
     corrected_ca = correct_calcium_for_albumin(ca, albumin)
     if corrected_ca is not None and abs(corrected_ca - ca) >= 0.1:
         correction_eval = evaluate("calcium", corrected_ca, rules, context)
@@ -564,6 +639,9 @@ def evaluate_panel(
             "bun_cr_ratio": bun_cr,
             "bun_cr_ratio_interpretation": interpret_bun_cr_ratio(bun_cr),
             "anion_gap": ag,
+            "lft_r_factor": lft_r,
+            "lft_pattern": lft_pattern,
+            "lft_pattern_interpretation": interpret_lft_pattern(lft_pattern, lft_r),
             "egfr": egfr,
             "egfr_formula": "CKD-EPI 2021 (no race coefficient)",
             "ckd_g_stage": g_stage,

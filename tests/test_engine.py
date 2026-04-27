@@ -14,16 +14,19 @@ from engine import (
     assign_ckd_a_stage,
     assign_ckd_g_stage,
     chronic_ckd_labs_indicated,
+    classify_lft_pattern,
     compute_anion_gap,
     compute_bun_cr_ratio,
     compute_egfr,
     compute_kdigo_aki_stage,
+    compute_lft_r_factor,
     compute_prevent_risk,
     correct_calcium_for_albumin,
     evaluate,
     evaluate_panel,
     find_severity,
     interpret_bun_cr_ratio,
+    interpret_lft_pattern,
     load_rules,
     pick_follow_up_dict,
     pick_thresholds,
@@ -537,6 +540,95 @@ def test_evaluate_tsh_pregnancy_normal_lower_bound(rules):
     # Pregnancy Normal band: 0.3-2.5; 0.35 is Normal
     preg = evaluate("tsh", 0.35, rules, {"pregnancy": True})
     assert preg["severity"] == "Normal"
+
+
+# ---------- LFT pattern (R-factor) ----------
+
+
+def test_lft_r_factor_hepatocellular_clearcut():
+    """ALT 10x ULN, ALP normal -> R well above 5."""
+    r = compute_lft_r_factor(alt=420, alp=100, sex="male")  # alt_uln=42, alp_uln=130
+    # (420/42) / (100/130) = 10 / 0.769 ≈ 13
+    assert r is not None and r > 5
+    assert classify_lft_pattern(r) == "hepatocellular"
+
+
+def test_lft_r_factor_cholestatic_clearcut():
+    """ALP elevated, ALT near normal -> R below 2."""
+    r = compute_lft_r_factor(alt=40, alp=400, sex="male")
+    # (40/42) / (400/130) = 0.952 / 3.077 ≈ 0.31
+    assert r is not None and r < 2
+    assert classify_lft_pattern(r) == "cholestatic"
+
+
+def test_lft_r_factor_mixed():
+    """ALT and ALP both moderately elevated."""
+    r = compute_lft_r_factor(alt=100, alp=260, sex="male")
+    # (100/42) / (260/130) = 2.38 / 2.0 ≈ 1.19 -> cholestatic
+    # Use values that produce 2-5
+    r = compute_lft_r_factor(alt=200, alp=200, sex="male")
+    # (200/42) / (200/130) = 4.76 / 1.54 ≈ 3.10 -> mixed
+    assert r is not None
+    assert classify_lft_pattern(r) == "mixed"
+
+
+def test_lft_r_factor_uses_sex_specific_alt_uln():
+    """Female ULN (33) gives a higher R-factor than male ULN (42) for same ALT."""
+    r_male = compute_lft_r_factor(alt=100, alp=100, sex="male")
+    r_female = compute_lft_r_factor(alt=100, alp=100, sex="female")
+    assert r_female > r_male
+
+
+def test_lft_r_factor_returns_none_when_both_normal():
+    """No injury to classify when both labs are within ULN."""
+    assert compute_lft_r_factor(alt=20, alp=80, sex="male") is None
+
+
+def test_lft_r_factor_returns_none_for_missing_inputs():
+    assert compute_lft_r_factor(None, 100, "male") is None
+    assert compute_lft_r_factor(100, None, "male") is None
+    assert compute_lft_r_factor(0, 100, "male") is None
+    assert compute_lft_r_factor(100, 0, "male") is None
+
+
+def test_classify_lft_pattern_returns_none_for_none():
+    assert classify_lft_pattern(None) is None
+
+
+def test_interpret_lft_pattern_includes_pattern_name():
+    text = interpret_lft_pattern("hepatocellular", 13.0)
+    assert text is not None
+    assert "hepatocellular" in text.lower()
+    assert "13" in text
+
+
+def test_evaluate_panel_surfaces_lft_pattern(rules):
+    panel = evaluate_panel(
+        [("alt", 420), ("alkaline_phosphatase", 100), ("ast", 200)], rules,
+        {"sex": "male"},
+    )
+    d = panel["derived"]
+    assert d["lft_r_factor"] is not None
+    assert d["lft_r_factor"] > 5
+    assert d["lft_pattern"] == "hepatocellular"
+    assert "hepatocellular" in d["lft_pattern_interpretation"].lower()
+
+
+def test_evaluate_panel_no_lft_pattern_without_alp(rules):
+    panel = evaluate_panel([("alt", 420)], rules, {"sex": "male"})
+    d = panel["derived"]
+    assert d["lft_r_factor"] is None
+    assert d["lft_pattern"] is None
+    assert d["lft_pattern_interpretation"] is None
+
+
+def test_evaluate_panel_no_lft_pattern_when_both_normal(rules):
+    panel = evaluate_panel(
+        [("alt", 20), ("alkaline_phosphatase", 80)], rules, {"sex": "male"},
+    )
+    d = panel["derived"]
+    assert d["lft_r_factor"] is None
+    assert d["lft_pattern"] is None
 
 
 # ---------- albumin-corrected calcium ----------
