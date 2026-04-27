@@ -262,6 +262,136 @@ def compute_anion_gap(
     return round(na - cl - hco3, 1)
 
 
+def compute_prevent_risk(
+    context: dict | None,
+    values_by_lab: dict,
+    egfr: float | None,
+) -> dict:
+    """Compute AHA PREVENT 2023 10-year risks if inputs are available.
+
+    Pulls inputs from context (sex, age, systolic_bp, current_smoker, bmi,
+    on_htn_meds, on_cholesterol_meds, diabetic) and from session lab values
+    (total_cholesterol, hdl_cholesterol). eGFR comes from the panel-level
+    derived computation.
+
+    Returns a dict with availability flag, lists of missing / out-of-range
+    inputs, the three 10-year risks (ASCVD, CVD, HF), a risk tier, and a
+    statin-intensity recommendation per the 2026 ACC/AHA dyslipidemia guideline.
+    Lazy-imports pyprevent so the engine doesn't pay the import cost when
+    PREVENT isn't being used.
+    """
+    ctx = context or {}
+    sex = ctx.get("sex")
+    age = ctx.get("age")
+    sbp = ctx.get("systolic_bp")
+    smoker = ctx.get("current_smoker")
+    bmi = ctx.get("bmi")
+    on_htn = ctx.get("on_htn_meds")
+    on_lipid = ctx.get("on_cholesterol_meds")
+    diabetic = ctx.get("diabetic")
+
+    tc = values_by_lab.get("total_cholesterol")
+    hdl = values_by_lab.get("hdl_cholesterol")
+
+    missing: list[str] = []
+    if sex not in ("male", "female"):
+        missing.append("sex")
+    if not age:
+        missing.append("age")
+    if tc is None:
+        missing.append("total cholesterol")
+    if hdl is None:
+        missing.append("HDL cholesterol")
+    if sbp is None:
+        missing.append("systolic BP")
+    if bmi is None:
+        missing.append("BMI")
+    if egfr is None:
+        missing.append("eGFR (requires creatinine + age + sex)")
+
+    empty_result = {
+        "available": False,
+        "missing": missing,
+        "out_of_range": [],
+        "ascvd_10y": None,
+        "cvd_10y": None,
+        "hf_10y": None,
+        "risk_tier": None,
+        "statin_recommendation": None,
+    }
+    if missing:
+        return empty_result
+
+    try:
+        import pyprevent  # type: ignore[import-untyped]
+    except ImportError:
+        empty_result["out_of_range"] = ["pyprevent not installed"]
+        return empty_result
+
+    kwargs = dict(
+        sex=sex,
+        age=float(age),
+        total_cholesterol=float(tc),
+        hdl_cholesterol=float(hdl),
+        systolic_bp=float(sbp),
+        has_diabetes=bool(diabetic),
+        current_smoker=bool(smoker),
+        bmi=float(bmi),
+        egfr=float(egfr),
+        on_htn_meds=bool(on_htn),
+        on_cholesterol_meds=bool(on_lipid),
+    )
+
+    try:
+        ascvd = pyprevent.calculate_10_yr_ascvd_risk(**kwargs)
+        cvd = pyprevent.calculate_10_yr_cvd_risk(**kwargs)
+        hf = pyprevent.calculate_10_yr_heart_failure_risk(**kwargs)
+    except ValueError as e:
+        return {
+            "available": False,
+            "missing": [],
+            "out_of_range": [str(e)],
+            "ascvd_10y": None,
+            "cvd_10y": None,
+            "hf_10y": None,
+            "risk_tier": None,
+            "statin_recommendation": None,
+        }
+
+    if ascvd >= 10:
+        tier = "high"
+        rec = (
+            "10-yr ASCVD ≥10% — high-intensity statin (atorvastatin 40–80 mg "
+            "or rosuvastatin 20–40 mg). LDL target <70 mg/dL or ≥50% reduction."
+        )
+    elif ascvd >= 3:
+        tier = "intermediate"
+        rec = (
+            "10-yr ASCVD 3–10% — moderate-intensity statin (atorvastatin 10–20, "
+            "rosuvastatin 5–10, simvastatin 20–40). Discuss risk-enhancing factors "
+            "(family hx, CKD, CAC scoring) for shared decision."
+        )
+    else:
+        tier = "low"
+        rec = (
+            "10-yr ASCVD <3% — generally lifestyle counseling. Consider "
+            "moderate-intensity statin if LDL 160–189 or 30-yr ASCVD ≥10%. "
+            "LDL ≥190 always warrants high-intensity statin and FH workup "
+            "regardless of computed risk."
+        )
+
+    return {
+        "available": True,
+        "missing": [],
+        "out_of_range": [],
+        "ascvd_10y": round(ascvd, 1),
+        "cvd_10y": round(cvd, 1),
+        "hf_10y": round(hf, 1),
+        "risk_tier": tier,
+        "statin_recommendation": rec,
+    }
+
+
 def evaluate_panel(
     lab_inputs: list[tuple[str, float]],
     rules: dict,
@@ -322,6 +452,8 @@ def evaluate_panel(
         if baseline_cr is None:
             missing.append("last known (baseline) creatinine")
 
+    prevent = compute_prevent_risk(ctx, values_by_lab, egfr)
+
     return {
         "results": results,
         "derived": {
@@ -336,6 +468,7 @@ def evaluate_panel(
             "kdigo_aki_stage": aki_stage,
             "chronic_ckd_labs_indicated": chronic_ckd_labs_indicated(g_stage),
             "missing_for_ckd_staging": missing,
+            "prevent": prevent,
         },
     }
 

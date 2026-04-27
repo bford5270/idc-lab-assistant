@@ -18,6 +18,7 @@ from engine import (
     compute_bun_cr_ratio,
     compute_egfr,
     compute_kdigo_aki_stage,
+    compute_prevent_risk,
     evaluate,
     evaluate_panel,
     find_severity,
@@ -506,3 +507,151 @@ def test_evaluate_panel_no_derived_when_cr_absent(rules):
     assert panel["derived"]["egfr"] is None
     assert panel["derived"]["bun_cr_ratio"] is None
     assert panel["derived"]["anion_gap"] is None
+
+
+# ---------- PREVENT (compute_prevent_risk) ----------
+
+
+def _full_prevent_context() -> dict:
+    return {
+        "sex": "male",
+        "age": 55,
+        "systolic_bp": 135,
+        "current_smoker": False,
+        "bmi": 28.0,
+        "on_htn_meds": True,
+        "on_cholesterol_meds": False,
+        "diabetic": False,
+    }
+
+
+def _full_prevent_lab_values() -> dict:
+    return {"total_cholesterol": 210, "hdl_cholesterol": 50}
+
+
+def test_prevent_unavailable_when_inputs_missing():
+    result = compute_prevent_risk({"sex": "male", "age": 55}, {}, None)
+    assert result["available"] is False
+    assert result["ascvd_10y"] is None
+    assert "HDL cholesterol" in result["missing"]
+    assert "BMI" in result["missing"]
+
+
+def test_prevent_unavailable_when_only_partial_labs():
+    result = compute_prevent_risk(_full_prevent_context(), {"total_cholesterol": 210}, 80.0)
+    assert result["available"] is False
+    assert "HDL cholesterol" in result["missing"]
+
+
+def test_prevent_available_with_full_inputs():
+    result = compute_prevent_risk(_full_prevent_context(), _full_prevent_lab_values(), 80.0)
+    assert result["available"] is True
+    assert result["ascvd_10y"] is not None
+    assert result["cvd_10y"] is not None
+    assert result["hf_10y"] is not None
+    assert result["risk_tier"] in {"low", "intermediate", "high"}
+    assert result["statin_recommendation"]
+
+
+def test_prevent_high_risk_recommends_high_intensity():
+    """65yo male diabetic smoker with elevated SBP, low HDL, low eGFR — should land in high tier."""
+    ctx = {
+        "sex": "male",
+        "age": 65,
+        "systolic_bp": 160,
+        "current_smoker": True,
+        "bmi": 32.0,
+        "on_htn_meds": True,
+        "on_cholesterol_meds": False,
+        "diabetic": True,
+    }
+    result = compute_prevent_risk(ctx, {"total_cholesterol": 240, "hdl_cholesterol": 35}, 55.0)
+    assert result["available"] is True
+    assert result["ascvd_10y"] >= 10
+    assert result["risk_tier"] == "high"
+    assert "high-intensity" in result["statin_recommendation"]
+
+
+def test_prevent_low_risk_recommends_lifestyle():
+    """40yo female nonsmoker normal BP — should be low risk."""
+    ctx = {
+        "sex": "female",
+        "age": 40,
+        "systolic_bp": 115,
+        "current_smoker": False,
+        "bmi": 23.0,
+        "on_htn_meds": False,
+        "on_cholesterol_meds": False,
+        "diabetic": False,
+    }
+    result = compute_prevent_risk(ctx, {"total_cholesterol": 180, "hdl_cholesterol": 60}, 100.0)
+    assert result["available"] is True
+    assert result["ascvd_10y"] < 3
+    assert result["risk_tier"] == "low"
+
+
+def test_prevent_age_out_of_range_reported():
+    ctx = _full_prevent_context()
+    ctx["age"] = 25  # below validated range (30-79)
+    result = compute_prevent_risk(ctx, _full_prevent_lab_values(), 90.0)
+    assert result["available"] is False
+    assert result["out_of_range"]
+
+
+def test_evaluate_panel_includes_prevent_block(rules):
+    """evaluate_panel returns a 'prevent' key inside derived even when not computable."""
+    panel = evaluate_panel([("potassium", 4.0)], rules, None)
+    assert "prevent" in panel["derived"]
+    assert panel["derived"]["prevent"]["available"] is False
+
+
+def test_evaluate_panel_computes_prevent_with_full_inputs(rules):
+    panel = evaluate_panel(
+        [
+            ("total_cholesterol", 210),
+            ("hdl_cholesterol", 50),
+            ("creatinine", 1.0),
+        ],
+        rules,
+        {
+            "sex": "male", "age": 55, "systolic_bp": 135, "current_smoker": False,
+            "bmi": 28.0, "on_htn_meds": True, "on_cholesterol_meds": False,
+            "diabetic": False,
+        },
+    )
+    prevent = panel["derived"]["prevent"]
+    assert prevent["available"] is True
+    assert prevent["ascvd_10y"] is not None
+    # eGFR must have been computed for PREVENT to fire.
+    assert panel["derived"]["egfr"] is not None
+
+
+# ---------- new lipid labs in rules.json ----------
+
+
+def test_lipid_labs_present(rules):
+    for lab_id in ("total_cholesterol", "ldl_cholesterol", "hdl_cholesterol",
+                   "triglycerides", "non_hdl_cholesterol"):
+        assert lab_id in rules["labs"], f"{lab_id} missing from rules.json"
+
+
+def test_ldl_severity_tiers(rules):
+    """Spot-check LDL boundaries — clinical decision points."""
+    assert evaluate("ldl_cholesterol", 95, rules)["severity"] == "Normal"
+    assert evaluate("ldl_cholesterol", 130, rules)["severity"] == "Mild High"
+    assert evaluate("ldl_cholesterol", 175, rules)["severity"] == "Moderate High"
+    assert evaluate("ldl_cholesterol", 200, rules)["severity"] == "Severe High"  # FH consideration
+    assert evaluate("ldl_cholesterol", 260, rules)["severity"] == "Critical High"
+
+
+def test_hdl_sex_stratified(rules):
+    """HDL 45 is Mild Low for women but Normal for men under sex-stratified bands."""
+    f = evaluate("hdl_cholesterol", 45, rules, {"sex": "female"})
+    m = evaluate("hdl_cholesterol", 45, rules, {"sex": "male"})
+    assert f["severity"] == "Mild Low"
+    assert m["severity"] == "Normal"
+
+
+def test_triglyceride_critical_high(rules):
+    """TG ≥1000 is Critical High due to acute pancreatitis risk."""
+    assert evaluate("triglycerides", 1200, rules)["severity"] == "Critical High"
