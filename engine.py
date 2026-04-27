@@ -355,6 +355,63 @@ def interpret_lft_pattern(pattern: str | None, r: float | None) -> str | None:
     )
 
 
+# ---------- Anemia workup branching (MCV-driven) ----------
+
+
+def classify_anemia_by_mcv(mcv: float | None) -> str | None:
+    """Classify anemia by MCV. Standard cutoffs: <80 microcytic, 80–100
+    normocytic, >100 macrocytic. Caller decides whether to invoke this
+    (only meaningful when Hgb is below normal)."""
+    if mcv is None or mcv <= 0:
+        return None
+    if mcv < 80:
+        return "microcytic"
+    if mcv > 100:
+        return "macrocytic"
+    return "normocytic"
+
+
+def interpret_anemia_workup(
+    pattern: str | None, mcv: float | None
+) -> str | None:
+    """Pattern-specific anemia workup guidance. mcv is included in the
+    text so the IDC sees which side of the cutoff the value falls on."""
+    if pattern is None or mcv is None:
+        return None
+    if pattern == "microcytic":
+        return (
+            f"MCV {mcv} fL (<80) — microcytic anemia. Workup: ferritin, "
+            "iron, TIBC, transferrin saturation (iron deficiency is the "
+            "most common cause; ferritin <30 ng/mL confirms). If iron "
+            "studies normal — hemoglobin electrophoresis (thalassemia, "
+            "especially Mediterranean / SE Asian / African descent), "
+            "consider lead level and anemia of chronic disease (CRP, "
+            "ferritin paradoxically normal/high). Stool occult blood and "
+            "GI workup if iron deficiency confirmed in adult male or "
+            "post-menopausal female."
+        )
+    if pattern == "macrocytic":
+        return (
+            f"MCV {mcv} fL (>100) — macrocytic anemia. Workup: B12 and "
+            "folate (megaloblastic if either deficient); TSH "
+            "(hypothyroidism); peripheral smear (hypersegmented "
+            "neutrophils confirm megaloblastic); reticulocyte count; "
+            "alcohol-use screen; medication review (methotrexate, "
+            "hydroxyurea, zidovudine, phenytoin). MCV >115 strongly "
+            "suggests B12/folate; MCV 100–115 broaden to alcohol, "
+            "hypothyroidism, MDS, drug-induced."
+        )
+    return (
+        f"MCV {mcv} fL (80–100) — normocytic anemia. Workup: reticulocyte "
+        "count to separate hypoproliferative (low retic — chronic "
+        "disease, early iron deficiency, renal, marrow failure) from "
+        "hyperproliferative (high retic — acute blood loss, hemolysis); "
+        "peripheral smear; haptoglobin and LDH if hemolysis suspected "
+        "(low haptoglobin + high LDH); CMP (renal); TSH; ferritin (early "
+        "iron deficiency can be normocytic before becoming microcytic)."
+    )
+
+
 def correct_calcium_for_albumin(
     ca: float | None, albumin: float | None
 ) -> float | None:
@@ -590,10 +647,25 @@ def evaluate_panel(
     albumin = values_by_lab.get("albumin")
     alt = values_by_lab.get("alt")
     alp = values_by_lab.get("alkaline_phosphatase")
+    mcv = values_by_lab.get("mcv")
     age = ctx.get("age")
     sex = ctx.get("sex")
     baseline_cr = ctx.get("baseline_creatinine")
     acr = ctx.get("urine_acr")
+
+    hgb_severity: str | None = next(
+        (
+            r["severity"] for r in results
+            if r.get("lab_id") == "hemoglobin" and "severity" in r
+        ),
+        None,
+    )
+    is_anemic = hgb_severity in {
+        "Mild Low", "Moderate Low", "Severe Low", "Critical Low"
+    }
+    anemia_pattern = (
+        classify_anemia_by_mcv(mcv) if (is_anemic and mcv is not None) else None
+    )
 
     egfr = compute_egfr(cr, age, sex) if cr is not None else None
     g_stage = assign_ckd_g_stage(egfr)
@@ -642,6 +714,8 @@ def evaluate_panel(
             "lft_r_factor": lft_r,
             "lft_pattern": lft_pattern,
             "lft_pattern_interpretation": interpret_lft_pattern(lft_pattern, lft_r),
+            "anemia_pattern": anemia_pattern,
+            "anemia_workup": interpret_anemia_workup(anemia_pattern, mcv),
             "egfr": egfr,
             "egfr_formula": "CKD-EPI 2021 (no race coefficient)",
             "ckd_g_stage": g_stage,

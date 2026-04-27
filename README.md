@@ -121,6 +121,11 @@ demos with synthetic data but is not appropriate for real clinical use.
   classifies hepatocellular (R>5) / mixed (2–5) / cholestatic (R<2)
   per AASLD/EASL DILI guidance, with workup language surfaced under
   ALT, AST, and ALP results plus the session-derived block.
+- Anemia workup branching by MCV: when Hgb is below normal and MCV is
+  in the panel, the engine classifies microcytic (<80) / normocytic
+  (80–100) / macrocytic (>100) and surfaces pattern-specific workup
+  (iron studies for micro; reticulocyte + smear for normo;
+  B12/folate/TSH for macro).
 
 **Phase 2 (in progress) — clinical content + context conditioning:**
 - Trimester-specific TSH bands (current pregnancy band is a single
@@ -135,7 +140,6 @@ demos with synthetic data but is not appropriate for real clinical use.
 - HIV reactive flow (4th-gen Ag/Ab → confirmatory).
 - TB PPD risk-stratified induration cutoffs.
 - PSA age-specific bands.
-- Anemia workup branching on MCV (micro / normo / macrocytic).
 
 **Phase 4 — trends:**
 - Per-lab "+ Add prior value" timeline UI for trend-aware labs

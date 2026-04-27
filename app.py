@@ -442,6 +442,12 @@ def render_result(result: dict, derived: dict) -> None:
     ):
         st.info(derived["lft_pattern_interpretation"])
 
+    if (
+        result["lab_id"] in ("hemoglobin", "mcv")
+        and derived.get("anemia_workup")
+    ):
+        st.info(derived["anemia_workup"])
+
     _plot_lab_bar(result)
 
     if result.get("sources"):
@@ -457,6 +463,7 @@ def render_session_derived(derived: dict) -> None:
         derived.get("bun_cr_ratio") is not None
         or derived.get("anion_gap") is not None
         or derived.get("lft_r_factor") is not None
+        or derived.get("anemia_pattern")
         or derived.get("egfr") is not None
         or derived.get("kdigo_aki_stage")
         or prevent.get("available")
@@ -480,6 +487,13 @@ def render_session_derived(derived: dict) -> None:
         )
         if derived.get("lft_pattern_interpretation"):
             st.info(derived["lft_pattern_interpretation"])
+
+    if derived.get("anemia_pattern"):
+        st.markdown(
+            f"**Anemia pattern (MCV-based):** {derived['anemia_pattern'].title()}"
+        )
+        if derived.get("anemia_workup"):
+            st.info(derived["anemia_workup"])
 
     if derived.get("egfr") is not None:
         st.markdown(
@@ -529,6 +543,8 @@ def _build_derived_lines(derived: dict) -> list[str]:
             f"LFT R-factor = {derived['lft_r_factor']} → "
             f"{derived['lft_pattern']} pattern."
         )
+    if derived.get("anemia_pattern"):
+        lines.append(f"Anemia pattern (MCV-based): {derived['anemia_pattern']}.")
     if derived.get("egfr") is not None:
         ga = derived.get("ckd_ga_stage") or derived.get("ckd_g_stage") or "incomplete data"
         lines.append(

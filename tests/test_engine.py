@@ -14,6 +14,7 @@ from engine import (
     assign_ckd_a_stage,
     assign_ckd_g_stage,
     chronic_ckd_labs_indicated,
+    classify_anemia_by_mcv,
     classify_lft_pattern,
     compute_anion_gap,
     compute_bun_cr_ratio,
@@ -25,6 +26,7 @@ from engine import (
     evaluate,
     evaluate_panel,
     find_severity,
+    interpret_anemia_workup,
     interpret_bun_cr_ratio,
     interpret_lft_pattern,
     load_rules,
@@ -629,6 +631,79 @@ def test_evaluate_panel_no_lft_pattern_when_both_normal(rules):
     d = panel["derived"]
     assert d["lft_r_factor"] is None
     assert d["lft_pattern"] is None
+
+
+# ---------- anemia workup (MCV-driven) ----------
+
+
+def test_classify_anemia_by_mcv_microcytic():
+    assert classify_anemia_by_mcv(70) == "microcytic"
+    assert classify_anemia_by_mcv(79.9) == "microcytic"
+
+
+def test_classify_anemia_by_mcv_normocytic():
+    assert classify_anemia_by_mcv(80) == "normocytic"
+    assert classify_anemia_by_mcv(90) == "normocytic"
+    assert classify_anemia_by_mcv(100) == "normocytic"
+
+
+def test_classify_anemia_by_mcv_macrocytic():
+    assert classify_anemia_by_mcv(101) == "macrocytic"
+    assert classify_anemia_by_mcv(120) == "macrocytic"
+
+
+def test_classify_anemia_by_mcv_returns_none_for_missing():
+    assert classify_anemia_by_mcv(None) is None
+    assert classify_anemia_by_mcv(0) is None
+
+
+def test_interpret_anemia_workup_includes_mcv_and_pattern_keywords():
+    micro = interpret_anemia_workup("microcytic", 70)
+    assert micro is not None and "70" in micro and "ferritin" in micro.lower()
+    macro = interpret_anemia_workup("macrocytic", 115)
+    assert macro is not None and "115" in macro and "b12" in macro.lower()
+    normo = interpret_anemia_workup("normocytic", 90)
+    assert normo is not None and "reticulocyte" in normo.lower()
+
+
+def test_evaluate_panel_surfaces_anemia_pattern_when_anemic_and_mcv_present(rules):
+    """Female Hgb 9 (Moderate Low) + MCV 72 -> microcytic anemia workup."""
+    panel = evaluate_panel(
+        [("hemoglobin", 9.0), ("mcv", 72)], rules,
+        {"sex": "female"},
+    )
+    d = panel["derived"]
+    assert d["anemia_pattern"] == "microcytic"
+    assert "ferritin" in d["anemia_workup"].lower()
+
+
+def test_evaluate_panel_no_anemia_pattern_when_hgb_normal(rules):
+    """Hgb in Normal range -> don't surface anemia workup even if MCV is unusual."""
+    panel = evaluate_panel(
+        [("hemoglobin", 14.0), ("mcv", 110)], rules,
+        {"sex": "female"},
+    )
+    d = panel["derived"]
+    assert d["anemia_pattern"] is None
+    assert d["anemia_workup"] is None
+
+
+def test_evaluate_panel_no_anemia_pattern_without_mcv(rules):
+    """Anemic Hgb but no MCV -> can't classify."""
+    panel = evaluate_panel([("hemoglobin", 9.0)], rules, {"sex": "female"})
+    d = panel["derived"]
+    assert d["anemia_pattern"] is None
+
+
+def test_evaluate_panel_anemia_pattern_macrocytic(rules):
+    """Hgb low, MCV 115 -> macrocytic with B12/folate guidance."""
+    panel = evaluate_panel(
+        [("hemoglobin", 10.0), ("mcv", 115)], rules,
+        {"sex": "male"},
+    )
+    d = panel["derived"]
+    assert d["anemia_pattern"] == "macrocytic"
+    assert "b12" in d["anemia_workup"].lower()
 
 
 # ---------- albumin-corrected calcium ----------
