@@ -16,6 +16,8 @@ session at the top.
 
 | SHA | Title | Phase |
 |---|---|---|
+| `3cbcb84` | Add run.sh / run.bat launchers + clickable localhost link in README | Local launch ergonomics |
+| `ddb7aa7` | Add DEVLOG.md — session pickup notes | Devlog |
 | `840afcd` | Add ISSO submission packet (docs/) | Hosting |
 | `917cc1f` | Phase 4 commit 3/3: K / Hgb / ALT / LDL / TSH trend interpreters | Phase 4 close |
 | `c21871e` | Phase 4 commit 2/3: PSA / Cr / A1C trend interpreters + Prior values UI | Phase 4 |
@@ -88,6 +90,26 @@ session at the top.
   before — still recommends local install or controlled-infra
   hosting; pre-existing demo-Streamlit-Cloud caveat still applies.
 
+### Local launch ergonomics
+
+- **`run.sh`** (Mac / Linux, executable in git: mode 100755) and
+  **`run.bat`** (Windows): double-clickable launchers. Both `cd`
+  to the script's own directory, install `requirements.txt` only if
+  `streamlit` isn't already on PATH, then run `streamlit run
+  app.py`. Streamlit auto-opens the default browser at
+  `http://localhost:8501` on first boot.
+- **README.md** got a top-of-document "🚀 Launch locally" section
+  with the clickable `http://localhost:8501` link (live once the
+  server is running) and the three launch options (double-click
+  launcher, terminal command, or click the link after boot).
+- **Mac Gatekeeper note**: first run of `run.sh` may prompt
+  ("can't be opened — unidentified developer"); right-click → Open,
+  or System Settings → Privacy & Security → "Open Anyway" once.
+  After the first allow, double-click works directly. A
+  `run.command` variant could be added if the user prefers the
+  Finder-double-click-opens-Terminal-without-prompt pattern; not
+  shipped today.
+
 ### Open questions / decisions for next session
 
 1. **PR from branch to main** — the 16 commits on
@@ -137,9 +159,10 @@ session at the top.
 
 - [ ] `git fetch && git checkout claude/review-idc-work-otGPz`
 - [ ] `python -m pytest` — should report 249 passed / 0 failed
-- [ ] `streamlit run app.py` — sanity-check that the four tabs
-      render: Manual entry, Paste lab text, Upload screenshot,
-      Serology
+- [ ] Double-click **`run.sh`** (Mac) or **`run.bat`** (Windows) —
+      or `streamlit run app.py` — sanity-check that the four tabs
+      render at http://localhost:8501: Manual entry, Paste lab
+      text, Upload screenshot, Serology
 - [ ] Decide direction:
    1. Open a PR `claude/review-idc-work-otGPz` → `main` (after a
       review pass, ideally `/ultrareview`).
