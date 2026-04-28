@@ -2091,6 +2091,84 @@
       ]
     },
 
+    "tb_ppd": {
+      "display_name": "TB Skin Test (PPD / TST) — induration",
+      "loinc": "57792-4",
+      "synonyms": ["ppd", "tst", "tb skin test", "mantoux", "induration"],
+      "unit": "mm",
+      "kind": "numeric",
+      "trendable": false,
+      "context_note": "PPD interpretation depends on patient risk category per CDC / ATS / IDSA. Set 'TB risk category' in the sidebar (high / moderate / low). High risk: HIV+, recent TB contact, fibrotic CXR consistent with prior TB, immunosuppressed (transplant, ≥15 mg/d prednisone for ≥1 month, TNF-α inhibitor). Moderate risk: recent immigrants from high-prevalence countries (within 5 years), IV drug users, congregate-setting residents/staff (prisons, nursing homes, hospitals, homeless shelters), mycobacteriology lab personnel, clinical conditions (silicosis, diabetes, CKD, leukemia/lymphoma, head/neck cancer, weight loss >10%, gastrectomy, jejunoileal bypass), children <4 years. Low risk: no risk factors. IGRA (QuantiFERON / T-SPOT) is preferred over PPD in BCG-vaccinated patients per CDC.",
+      "thresholds_by_context": {
+        "default": [
+          { "severity": "Normal",      "max": 15 },
+          { "severity": "Mild High",   "min": 15, "max": 25 },
+          { "severity": "Severe High", "min": 25 }
+        ],
+        "high_risk": [
+          { "severity": "Normal",      "max": 5 },
+          { "severity": "Mild High",   "min": 5,  "max": 15 },
+          { "severity": "Severe High", "min": 15 }
+        ],
+        "moderate_risk": [
+          { "severity": "Normal",      "max": 10 },
+          { "severity": "Mild High",   "min": 10, "max": 15 },
+          { "severity": "Severe High", "min": 15 }
+        ],
+        "low_risk": [
+          { "severity": "Normal",      "max": 15 },
+          { "severity": "Mild High",   "min": 15, "max": 25 },
+          { "severity": "Severe High", "min": 25 }
+        ]
+      },
+      "follow_up": {
+        "Normal": {
+          "category": "PPD negative for the patient's risk category",
+          "next_tests": [
+            "If recent (<8–10 weeks) high-risk exposure, repeat PPD or IGRA in 8–10 weeks (window-period coverage).",
+            "Two-step testing for healthcare workers / new institutional admits with no documented prior PPD."
+          ],
+          "ehr_plan": "PPD induration {value} mm — negative for the patient's risk category. Plan: if recent exposure (<8–10 weeks), repeat PPD or IGRA in 8–10 weeks; two-step testing for healthcare workers / institutional admits without prior documented PPD.",
+          "patient_communication": "Your TB skin test is negative. If you may have been exposed in the last 8 to 10 weeks, we will repeat the test once that window has passed."
+        },
+        "Mild High": {
+          "category": "Positive PPD — latent TB infection (LTBI) until proven otherwise",
+          "next_tests": [
+            "Symptom screen for active TB: cough >2 weeks, hemoptysis, fevers, night sweats, weight loss, anorexia.",
+            "Chest X-ray (PA + lateral) — rule out active pulmonary TB or fibrotic changes consistent with prior TB.",
+            "If symptomatic OR chest X-ray abnormal: 3 sputum AFB smears + cultures (induced if non-productive); molecular test (Xpert MTB/RIF); isolation pending results.",
+            "HIV test (4th-gen Ag/Ab) if not done in last 12 months — co-infection alters management.",
+            "Hepatitis B and C serology (baseline before isoniazid / rifampin — hepatotoxicity risk).",
+            "CMP, LFTs, CBC (baseline pre-treatment).",
+            "Pregnancy test if reproductive-age female.",
+            "Discuss with preventive medicine for contact tracing per local TB program.",
+            "LTBI treatment per CDC 2020: rifampin 4 months (preferred — shorter, better completion) OR isoniazid + rifapentine 3 months (3HP, weekly DOT) OR isoniazid 6–9 months. Treat per CDC dosing tables; check LFTs at baseline + monthly if symptomatic or risk factors."
+          ],
+          "ehr_plan": "PPD induration {value} mm — positive for risk category. Plan: symptom screen for active TB; chest X-ray (PA + lateral); if symptomatic OR CXR abnormal — sputum AFB ×3 + Xpert MTB/RIF + isolation pending; HIV (4th-gen) if not within 12 months; HBV / HCV serology baseline (hepatotoxicity); CMP / LFT / CBC baseline; pregnancy test if applicable; preventive medicine consult for contact tracing per local TB program; LTBI treatment per CDC 2020 (rifampin 4 mo preferred OR 3HP weekly DOT × 12 OR INH 6–9 mo); monthly LFT monitoring if symptomatic or risk factors.",
+          "patient_communication": "Your TB skin test is positive. This usually means latent TB — the bacteria are in your body but not currently causing disease. We need to do a chest X-ray and ask you about symptoms (cough, fevers, night sweats, weight loss) to make sure the TB isn't active. If everything is reassuring, we will treat the latent infection with antibiotics (typically a 4-month course of rifampin or a 12-week weekly course of two medicines). The preventive medicine team will help track and test anyone who may have been exposed, since TB is a public health priority."
+        },
+        "Severe High": {
+          "category": "Strongly positive PPD (≥15 mm in any risk category) — active TB workup priority",
+          "next_tests": [
+            "Symptom screen + chest X-ray (PA + lateral) urgently.",
+            "Sputum AFB smear ×3 + cultures + Xpert MTB/RIF — even if asymptomatic and CXR clear (large reactions warrant lower threshold).",
+            "Respiratory isolation if any clinical or radiographic suspicion of active TB.",
+            "HIV (4th-gen Ag/Ab) if not within 12 months.",
+            "HBV / HCV serology, CMP / LFT / CBC, pregnancy test if applicable.",
+            "Preventive medicine consult — strongly positive PPDs are tracked closely; contact investigation per local TB program.",
+            "LTBI treatment if active TB ruled out; refer to TB clinic / pulmonary if active disease confirmed."
+          ],
+          "ehr_plan": "PPD induration {value} mm — strongly positive (≥15 mm). Plan: urgent CXR + symptom screen; sputum AFB ×3 + Xpert MTB/RIF even if asymptomatic; respiratory isolation if any suspicion of active TB; HIV (4th-gen) if not within 12 months; HBV/HCV serology, CMP/LFT/CBC, pregnancy test; preventive medicine consult for contact investigation; TB clinic referral if active disease confirmed; LTBI treatment per CDC 2020 if active ruled out.",
+          "patient_communication": "Your TB skin test shows a strongly positive reaction. We need to make sure this is not active TB — please come in today for a chest X-ray and sputum tests, and avoid being around others (especially children, elderly, or people with weak immune systems) until we have results. The preventive medicine team will help with contact tracing. Most strongly positive tests turn out to be latent TB (treatable with antibiotics), but we need to rule out active disease first."
+        }
+      },
+      "sources": [
+        "CDC Latent TB Infection: A Guide for Primary Health Care Providers (2020)",
+        "CDC / ATS / IDSA Targeted Tuberculin Testing and Treatment of LTBI (MMWR 2000, with 2020 update)",
+        "ATS / CDC / IDSA Treatment of Drug-Susceptible TB (2016)"
+      ]
+    },
+
     "psa": {
       "display_name": "Prostate-Specific Antigen (PSA)",
       "loinc": "2857-1",
@@ -2191,6 +2269,63 @@
         "AUA Early Detection of Prostate Cancer Guideline (2023)",
         "NCCN Prostate Cancer Early Detection",
         "Oesterling et al., JAMA 1993 (age-specific reference ranges)"
+      ]
+    },
+
+    "tb_igra": {
+      "display_name": "TB IGRA (QuantiFERON / T-SPOT)",
+      "kind": "serology",
+      "inputs": [
+        { "id": "igra_result", "label": "IGRA positive (QuantiFERON-TB Gold Plus / T-SPOT.TB)", "loinc": "71773-0" }
+      ],
+      "patterns": [
+        {
+          "id": "negative",
+          "label": "IGRA negative",
+          "match": { "igra_result": false },
+          "category": "IGRA negative — no laboratory evidence of TB infection",
+          "next_tests": [
+            "If recent (<8–10 weeks) high-risk exposure: repeat IGRA in 8–10 weeks (window-period coverage).",
+            "If symptomatic with high clinical suspicion despite negative IGRA: chest X-ray, sputum AFB smears + Xpert MTB/RIF; IGRA can be falsely negative in active disease (10–20%) and in immunocompromised."
+          ],
+          "ehr_plan": "IGRA negative. Plan: if recent exposure (<8–10 weeks), repeat in 8–10 weeks; if symptomatic with high clinical suspicion, do not exclude TB on IGRA alone — chest X-ray + sputum workup.",
+          "patient_communication": "Your TB blood test is negative. If you may have been exposed in the last 8 to 10 weeks, we will repeat the test once that window has passed."
+        },
+        {
+          "id": "positive",
+          "label": "IGRA positive — latent TB infection (LTBI) until proven otherwise",
+          "match": { "igra_result": true },
+          "category": "Positive IGRA — latent TB infection until active disease ruled out",
+          "next_tests": [
+            "Symptom screen for active TB: cough >2 weeks, hemoptysis, fevers, night sweats, weight loss, anorexia.",
+            "Chest X-ray (PA + lateral) — rule out active pulmonary TB or fibrotic changes.",
+            "If symptomatic OR chest X-ray abnormal: 3 sputum AFB smears + cultures + Xpert MTB/RIF; respiratory isolation pending results.",
+            "HIV test (4th-gen Ag/Ab) if not done in last 12 months.",
+            "Hepatitis B and C serology (baseline before isoniazid / rifampin).",
+            "CMP, LFTs, CBC (baseline pre-treatment).",
+            "Pregnancy test if reproductive-age female.",
+            "Discuss with preventive medicine for contact tracing per local TB program.",
+            "LTBI treatment per CDC 2020: rifampin 4 months (preferred) OR isoniazid + rifapentine 3 months (3HP weekly DOT) OR isoniazid 6–9 months."
+          ],
+          "ehr_plan": "IGRA positive — latent TB infection until active disease ruled out. Plan: symptom screen; chest X-ray (PA + lateral); if symptomatic OR CXR abnormal — sputum AFB ×3 + Xpert MTB/RIF + isolation; HIV (4th-gen) if not within 12 months; HBV / HCV serology baseline; CMP / LFT / CBC baseline; pregnancy test if applicable; preventive medicine consult for contact tracing per local TB program; LTBI treatment per CDC 2020 (rifampin 4 mo preferred OR 3HP × 12 weekly DOT OR INH 6–9 mo).",
+          "patient_communication": "Your TB blood test is positive. This usually means latent TB — the bacteria are in your body but not currently causing disease. We need to do a chest X-ray and ask you about symptoms (cough, fevers, night sweats, weight loss) to make sure the TB isn't active. If everything is reassuring, we will treat the latent infection with antibiotics. The preventive medicine team will help with contact tracing."
+        }
+      ],
+      "fallback": {
+        "id": "indeterminate",
+        "label": "IGRA indeterminate — repeat",
+        "category": "Indeterminate IGRA result — repeat",
+        "next_tests": [
+          "Repeat IGRA — indeterminate results often resolve on repeat (improper specimen handling or transient immunosuppression are common causes).",
+          "Consider PPD as alternative if IGRA repeatedly indeterminate.",
+          "Evaluate for immunosuppression (HIV, recent steroids, malignancy, transplant) — indeterminate IGRA is more common in immunocompromised."
+        ],
+        "ehr_plan": "IGRA indeterminate. Plan: repeat IGRA; consider PPD as alternative if repeatedly indeterminate; evaluate for immunosuppression (HIV, steroids, malignancy, transplant) which can cause indeterminate results.",
+        "patient_communication": "Your TB blood test was inconclusive. We need to repeat it — these results sometimes happen because of how the blood was handled or your immune system at the time of the test."
+      },
+      "sources": [
+        "CDC Latent TB Infection: A Guide for Primary Health Care Providers (2020)",
+        "CDC / ATS / IDSA Targeted Tuberculin Testing and Treatment of LTBI (MMWR 2000, with 2020 update)"
       ]
     },
 

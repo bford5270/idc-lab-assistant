@@ -63,6 +63,14 @@ with st.sidebar:
              "Leave blank for the generic pregnancy band.",
     )
     diabetic_choice = st.selectbox("Diabetic?", options=["—", "no", "yes"], index=0)
+    tb_risk_choice = st.selectbox(
+        "TB risk category (for PPD interpretation)",
+        options=["—", "low", "moderate", "high"], index=0,
+        help="High: HIV+, recent contact, immunosuppressed. Moderate: "
+             "high-prevalence-country immigrants <5y, IV drug users, "
+             "congregate settings, lab workers, diabetes / CKD / silicosis "
+             "/ certain cancers. Low: no risk factors.",
+    )
 
     st.markdown("---")
     st.subheader("Kidney workup (optional)")
@@ -131,6 +139,8 @@ with st.sidebar:
         context["diabetic"] = True
     elif diabetic_choice == "no":
         context["diabetic"] = False
+    if tb_risk_choice in ("low", "moderate", "high"):
+        context["tb_risk_category"] = tb_risk_choice
     if baseline_cr > 0:
         context["baseline_creatinine"] = baseline_cr
     if baseline_cr_date.strip():

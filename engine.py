@@ -48,12 +48,14 @@ def pick_thresholds(lab_def: dict, context: dict | None) -> tuple[list[dict], bo
     Lookup order — first match wins:
     1. pregnancy_T<N> (trimester-specific, when context.trimester ∈ {1, 2, 3})
     2. pregnancy (generic pregnancy fallback)
-    3. age bracket (age_40_49 / age_50_59 / age_60_69 / age_70_plus —
+    3. TB risk category (high_risk / moderate_risk / low_risk — used by
+       tb_ppd per CDC induration cutoffs)
+    4. age bracket (age_40_49 / age_50_59 / age_60_69 / age_70_plus —
        used by PSA per Oesterling-derived age-specific ranges)
-    4. elderly (when context.age >= ELDERLY_AGE_THRESHOLD; broader than
+    5. elderly (when context.age >= ELDERLY_AGE_THRESHOLD; broader than
        age_70_plus for labs that only differentiate elderly vs not)
-    5. sex (female / male)
-    6. default
+    6. sex (female / male)
+    7. default
 
     Pregnancy outranks age and sex because pregnancy-specific reference
     ranges (ATA 2017 TSH, ACOG Cr) differ fundamentally from age- or
@@ -73,6 +75,12 @@ def pick_thresholds(lab_def: dict, context: dict | None) -> tuple[list[dict], bo
                 return by_context[tri_key], False
         if "pregnancy" in by_context:
             return by_context["pregnancy"], False
+
+    tb_risk = ctx.get("tb_risk_category")
+    if tb_risk in ("high", "moderate", "low"):
+        tb_key = f"{tb_risk}_risk"
+        if tb_key in by_context:
+            return by_context[tb_key], False
 
     age = ctx.get("age")
     bracket = _age_bracket_key(age)

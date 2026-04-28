@@ -742,6 +742,74 @@ def test_age_bracket_helper():
     assert _age_bracket_key(95) == "age_70_plus"
 
 
+# ---------- TB PPD risk-stratified bands ----------
+
+
+def test_ppd_high_risk_5mm_positive(rules):
+    """Induration 6 mm in HIV+ / recent contact / immunosuppressed -> Mild High."""
+    res = evaluate("tb_ppd", 6, rules, {"tb_risk_category": "high"})
+    assert res["severity"] == "Mild High"
+
+
+def test_ppd_high_risk_4mm_negative(rules):
+    res = evaluate("tb_ppd", 4, rules, {"tb_risk_category": "high"})
+    assert res["severity"] == "Normal"
+
+
+def test_ppd_moderate_risk_10mm_positive(rules):
+    res = evaluate("tb_ppd", 10, rules, {"tb_risk_category": "moderate"})
+    assert res["severity"] == "Mild High"
+
+
+def test_ppd_moderate_risk_8mm_negative(rules):
+    res = evaluate("tb_ppd", 8, rules, {"tb_risk_category": "moderate"})
+    assert res["severity"] == "Normal"
+
+
+def test_ppd_low_risk_15mm_positive(rules):
+    res = evaluate("tb_ppd", 15, rules, {"tb_risk_category": "low"})
+    assert res["severity"] == "Mild High"
+
+
+def test_ppd_low_risk_12mm_negative(rules):
+    """12 mm is positive in moderate risk but negative in low risk —
+    risk-stratified cutoffs do their job."""
+    low = evaluate("tb_ppd", 12, rules, {"tb_risk_category": "low"})
+    moderate = evaluate("tb_ppd", 12, rules, {"tb_risk_category": "moderate"})
+    assert low["severity"] == "Normal"
+    assert moderate["severity"] == "Mild High"
+
+
+def test_ppd_strongly_positive_15mm_in_high_risk(rules):
+    """≥15 mm gets Severe High in any risk category — active TB workup
+    priority."""
+    res = evaluate("tb_ppd", 18, rules, {"tb_risk_category": "high"})
+    assert res["severity"] == "Severe High"
+
+
+def test_ppd_no_risk_category_uses_default(rules):
+    """No tb_risk_category -> default band (low-risk equivalent: Normal <15)."""
+    res = evaluate("tb_ppd", 12, rules, {})
+    assert res["severity"] == "Normal"
+    assert res["threshold_used_default"] is True
+
+
+def test_ppd_invalid_risk_category_falls_to_default(rules):
+    """Unrecognized risk category string -> falls through to default."""
+    res = evaluate("tb_ppd", 12, rules, {"tb_risk_category": "very_high"})
+    assert res["severity"] == "Normal"
+    assert res["threshold_used_default"] is True
+
+
+def test_ppd_pregnancy_does_not_override_tb_risk(rules):
+    """tb_ppd has no pregnancy band, so tb_risk_category should still
+    drive cutoff even when pregnancy=True."""
+    res = evaluate("tb_ppd", 6, rules, {
+        "pregnancy": True, "tb_risk_category": "high",
+    })
+    assert res["severity"] == "Mild High"
+
+
 # ---------- LFT pattern (R-factor) ----------
 
 

@@ -349,6 +349,28 @@ def test_hsv_dual(rules):
     assert r["pattern_id"] == "hsv_dual"
 
 
+# ---------- TB IGRA ----------
+
+
+def test_tb_igra_negative(rules):
+    r = evaluate_serology("tb_igra", {"igra_result": False}, rules)
+    assert r["pattern_id"] == "negative"
+
+
+def test_tb_igra_positive(rules):
+    r = evaluate_serology("tb_igra", {"igra_result": True}, rules)
+    assert r["pattern_id"] == "positive"
+    plan = r["ehr_plan"].lower()
+    assert "chest x-ray" in plan or "cxr" in plan
+    assert "preventive medicine" in plan
+    assert "rifampin" in plan or "isoniazid" in plan
+
+
+def test_tb_igra_indeterminate(rules):
+    r = evaluate_serology("tb_igra", {}, rules)
+    assert r["pattern_id"] == "indeterminate"
+
+
 # ---------- Coverage check: every serology lab is reachable ----------
 
 

@@ -167,14 +167,33 @@ demos with synthetic data but is not appropriate for real clinical use.
   - **HSV type-specific serology** (HSV-1 IgG / HSV-2 IgG): no
     exposure / HSV-1 only / HSV-2 only (offers PrEP given increased
     HIV acquisition risk) / dual.
+- **TB PPD / IGRA** with risk-stratified interpretation per CDC:
+  - **TB PPD** (numeric induration mm) with risk-stratified bands —
+    high (≥5 mm: HIV+ / recent contact / immunosuppressed),
+    moderate (≥10 mm: high-prevalence-country immigrants <5y, IV
+    drug users, congregate settings, lab workers, certain medical
+    conditions, children <4), low (≥15 mm: no risk factors). New
+    sidebar "TB risk category" selector drives the cutoff.
+  - **TB IGRA** (QuantiFERON / T-SPOT) — negative / positive /
+    indeterminate. Both PPD positive and IGRA positive trigger the
+    same workup (CXR + symptom screen, sputum AFB if symptomatic,
+    HIV / HBV / HCV / CMP / LFT baseline, preventive medicine
+    contact-tracing consult, LTBI treatment per CDC 2020 — rifampin
+    4 months preferred, or 3HP × 12 weekly DOT, or INH 6–9 months).
+- **PSA age-specific bands** per AUA / Oesterling: 40–49 (<2.5),
+  50–59 (<3.5), 60–69 (<4.5), 70+ (<6.5). Severity ladder ranges
+  Mild High through Critical High (≥20 ng/mL — bone scan + CT +
+  urology/oncology referral). Default band (no age) keeps the
+  classic <4.0 cutoff.
 
 **Phase 2 — closed.** Pregnancy and age-adjusted thresholds shipped
 above. Future per-lab context expansions (pediatric ALP, sex/age PSA
 bands, etc.) live in Phase 3 alongside the qualitative interpreters.
 
-**Phase 3 — qualitative interpreters + panel patterns:**
-- TB PPD / IGRA risk-stratified induration cutoffs.
-- PSA age-specific bands.
+**Phase 3 — closed.** Qualitative interpreters and risk-stratified
+panels shipped above. Future Phase-3-style content (additional STIs,
+TB drug susceptibility, urine dipstick patterns, etc.) lives in
+Phase 4 alongside the trend timeline UI.
 
 **Phase 4 — trends:**
 - Per-lab "+ Add prior value" timeline UI for trend-aware labs
