@@ -213,3 +213,122 @@ def test_evaluate_panel_no_priors_kwarg_is_backward_compatible(rules):
     """Calling evaluate_panel without priors_by_lab should still work."""
     panel = evaluate_panel([("potassium", 4.0)], rules)
     assert panel["results"][0]["trend"]["available"] is False
+
+
+# ---------- PSA trend interpretation ----------
+
+
+def test_psa_velocity_above_threshold_prompts_referral(rules):
+    """PSA 4.5 today vs 3.0 a year ago -> velocity 1.5 ng/mL/year (>0.75)."""
+    today = date(2026, 4, 28)
+    res = evaluate(
+        "psa", 4.5, rules, {"age": 60},
+        priors=[(3.0, "2025-04-28")],
+    )
+    # Re-do with explicit today so the test is deterministic
+    from engine import compute_trend_metrics, interpret_trend
+    m = compute_trend_metrics(4.5, [(3.0, "2025-04-28")], today=today)
+    text = interpret_trend("psa", 4.5, m, rules["labs"]["psa"])
+    assert text is not None
+    assert "0.75" in text
+    assert "urology" in text.lower()
+
+
+def test_psa_velocity_below_threshold_continues_surveillance(rules):
+    """PSA 3.5 today vs 3.0 a year ago -> velocity 0.5/year (<0.75) — slow rise."""
+    from engine import compute_trend_metrics, interpret_trend
+    today = date(2026, 4, 28)
+    m = compute_trend_metrics(3.5, [(3.0, "2025-04-28")], today=today)
+    text = interpret_trend("psa", 3.5, m, rules["labs"]["psa"])
+    assert text is not None
+    assert "surveillance" in text.lower() or "below 0.75" in text.lower()
+
+
+def test_psa_velocity_negative_treatment_response(rules):
+    """PSA dropped >0.5 ng/mL in a year -> treatment response language."""
+    from engine import compute_trend_metrics, interpret_trend
+    today = date(2026, 4, 28)
+    m = compute_trend_metrics(2.0, [(3.0, "2025-04-28")], today=today)
+    text = interpret_trend("psa", 2.0, m, rules["labs"]["psa"])
+    assert text is not None
+    assert "declining" in text.lower() or "treatment response" in text.lower()
+
+
+# ---------- Cr trend interpretation ----------
+
+
+def test_cr_kdigo_aki_stage_1_when_within_window(rules):
+    """Prior Cr 1.0 yesterday, current 1.4 -> Δ 0.4 mg/dL within 48h -> Stage 1."""
+    from engine import compute_trend_metrics, interpret_trend
+    today = date(2026, 4, 28)
+    m = compute_trend_metrics(1.4, [(1.0, "2026-04-27")], today=today)
+    text = interpret_trend("creatinine", 1.4, m, rules["labs"]["creatinine"])
+    assert text is not None
+    assert "Stage 1 AKI" in text
+
+
+def test_cr_kdigo_aki_stage_3_at_3x_baseline(rules):
+    """Prior 1.0 a week ago, current 3.5 -> ratio 3.5 -> Stage 3."""
+    from engine import compute_trend_metrics, interpret_trend
+    today = date(2026, 4, 28)
+    m = compute_trend_metrics(3.5, [(1.0, "2026-04-22")], today=today)
+    text = interpret_trend("creatinine", 3.5, m, rules["labs"]["creatinine"])
+    assert text is not None
+    assert "Stage 3 AKI" in text
+
+
+def test_cr_chronic_uptrend_outside_kdigo_window(rules):
+    """Prior 1.0 a year ago, current 1.5 -> outside KDIGO window — describe
+    chronic upward trajectory, not AKI staging."""
+    from engine import compute_trend_metrics, interpret_trend
+    today = date(2026, 4, 28)
+    m = compute_trend_metrics(1.5, [(1.0, "2025-04-28")], today=today)
+    text = interpret_trend("creatinine", 1.5, m, rules["labs"]["creatinine"])
+    assert text is not None
+    assert "Stage" not in text  # not AKI staging
+    assert "Re-assess" in text or "trending up" in text.lower()
+
+
+# ---------- A1C trend interpretation ----------
+
+
+def test_a1c_improving(rules):
+    """A1C 8.5 -> 7.5 over a year -> improving by 1.0%."""
+    from engine import compute_trend_metrics, interpret_trend
+    today = date(2026, 4, 28)
+    m = compute_trend_metrics(7.5, [(8.5, "2025-04-28")], today=today)
+    text = interpret_trend("hba1c", 7.5, m, rules["labs"]["hba1c"])
+    assert text is not None
+    assert "improving" in text.lower()
+
+
+def test_a1c_worsening(rules):
+    from engine import compute_trend_metrics, interpret_trend
+    today = date(2026, 4, 28)
+    m = compute_trend_metrics(8.5, [(7.5, "2025-04-28")], today=today)
+    text = interpret_trend("hba1c", 8.5, m, rules["labs"]["hba1c"])
+    assert text is not None
+    assert "worsening" in text.lower()
+    assert "intensification" in text.lower() or "ada" in text.lower()
+
+
+def test_a1c_stable(rules):
+    """Within 0.5% delta -> stable."""
+    from engine import compute_trend_metrics, interpret_trend
+    today = date(2026, 4, 28)
+    m = compute_trend_metrics(7.3, [(7.5, "2025-04-28")], today=today)
+    text = interpret_trend("hba1c", 7.3, m, rules["labs"]["hba1c"])
+    assert text is not None
+    assert "stable" in text.lower()
+
+
+# ---------- Lab without registered interpreter ----------
+
+
+def test_unregistered_lab_returns_none(rules):
+    """Sodium has no trend interpreter -> returns None even with priors."""
+    from engine import compute_trend_metrics, interpret_trend
+    today = date(2026, 4, 28)
+    m = compute_trend_metrics(140, [(135, "2025-04-28")], today=today)
+    text = interpret_trend("sodium", 140, m, rules["labs"]["sodium"])
+    assert text is None

@@ -375,6 +375,111 @@ def evaluate(
     }
 
 
+def _interpret_psa_trend(current: float, m: dict) -> str | None:
+    """PSA velocity > 0.75 ng/mL/year is the classic threshold for further
+    workup even when the absolute value is within reference range
+    (Carter et al.; AUA 2023 guidance acknowledges velocity as adjunct)."""
+    velocity = m.get("velocity_per_year")
+    span_y = m.get("span_years")
+    direction = m.get("direction")
+    if velocity is None:
+        return None
+    baseline = m.get("baseline_value")
+    if velocity > 0.75:
+        return (
+            f"PSA velocity = +{velocity} ng/mL/year over {span_y} y "
+            f"(prior {baseline} ng/mL on {m['baseline_date']}, current "
+            f"{current} ng/mL). Rate >0.75/year warrants urology referral "
+            "even within reference range — calculate PSA density and "
+            "consider multiparametric prostate MRI."
+        )
+    if velocity < -0.5:
+        return (
+            f"PSA velocity = {velocity} ng/mL/year — declining trend "
+            f"(prior {baseline} on {m['baseline_date']}). Consistent with "
+            "treatment response if on 5α-reductase inhibitor or post-RP / "
+            "radiation; document trajectory."
+        )
+    if direction == "rising":
+        return (
+            f"PSA rising slowly: +{m['delta']} ng/mL over {span_y} y "
+            f"(velocity {velocity}/year, below 0.75 threshold). Continue "
+            "surveillance per AUA 2023; consider repeat in 6–12 months."
+        )
+    return f"PSA stable since {m['baseline_date']} (Δ {m['delta']:+}; velocity {velocity}/year)."
+
+
+def _interpret_cr_trend(current: float, m: dict) -> str | None:
+    """Cr trend with KDIGO AKI overlay. When the most-recent prior is
+    within the 7-day KDIGO window, treats it as the baseline and reports
+    the AKI stage; for older priors, describes trajectory only."""
+    span_d = m.get("span_days")
+    delta = m.get("delta")
+    baseline = m.get("baseline_value")
+    if span_d is None or delta is None or baseline is None or baseline <= 0:
+        return None
+    if span_d <= 7:
+        ratio = current / baseline
+        if ratio >= 3.0 or current >= 4.0:
+            stage = "Stage 3 AKI"
+        elif ratio >= 2.0:
+            stage = "Stage 2 AKI"
+        elif ratio >= 1.5 or (span_d <= 2 and delta >= 0.3):
+            stage = "Stage 1 AKI"
+        else:
+            stage = "No AKI by KDIGO"
+        return (
+            f"Cr trend: prior {baseline} mg/dL ({span_d}d ago) → current "
+            f"{current} (ratio {round(ratio, 2)}, Δ {delta:+} mg/dL). "
+            f"KDIGO: {stage}."
+        )
+    if delta >= 0.3:
+        return (
+            f"Cr trending up: {baseline} → {current} mg/dL over "
+            f"{m['span_years']} y (Δ +{delta}). Re-assess kidney function "
+            "(repeat eGFR, UACR; review nephrotoxic medications)."
+        )
+    if delta <= -0.3:
+        return (
+            f"Cr trending down: {baseline} → {current} mg/dL over "
+            f"{m['span_years']} y. Consistent with improving volume status, "
+            "treatment response, or muscle-mass loss — clinical correlation."
+        )
+    return f"Cr stable since {m['baseline_date']} (Δ {delta:+} over {m['span_years']} y)."
+
+
+def _interpret_a1c_trend(current: float, m: dict) -> str | None:
+    """A1C — ADA Standards of Care: ≥0.5% change is clinically meaningful."""
+    delta = m.get("delta")
+    span_y = m.get("span_years")
+    baseline = m.get("baseline_value")
+    if delta is None or baseline is None:
+        return None
+    if delta <= -0.5:
+        return (
+            f"A1C improving by {abs(delta)}% over {span_y} y "
+            f"({baseline}% → {current}%). Maintain regimen; reinforce "
+            "lifestyle gains; reassess goal per ADA Standards of Care."
+        )
+    if delta >= 0.5:
+        return (
+            f"A1C worsening by {delta}% over {span_y} y "
+            f"({baseline}% → {current}%). Reassess medication adherence, "
+            "diet, weight, glucotoxicity / lipotoxicity; consider "
+            "intensification per ADA Standards of Care."
+        )
+    return (
+        f"A1C stable (Δ {delta:+}% over {span_y} y); current {current}%."
+    )
+
+
+_TREND_INTERPRETERS = {
+    "psa": _interpret_psa_trend,
+    "creatinine": _interpret_cr_trend,
+    "hba1c": _interpret_a1c_trend,
+}
+
+
 def interpret_trend(
     lab_id: str,
     current_value: float,
@@ -384,17 +489,21 @@ def interpret_trend(
     """Return a lab-specific narrative for the trend metrics, or None
     if no trend interpretation is defined for this lab. The numeric
     metrics already include velocity / delta / direction; this layer
-    adds clinical meaning ('PSA velocity >0.75 ng/mL/year warrants
-    urology referral', 'A1C improving — maintain regimen', etc.).
+    adds clinical meaning (PSA velocity threshold, A1C improvement
+    cutoff, KDIGO AKI ratio, etc.).
 
-    Specific lab interpreters live alongside this dispatch and are
-    added incrementally — the empty default keeps the trend block
-    informational (just numbers) for any lab without a custom
-    interpreter yet.
+    Adding a new interpreter: write a `_interpret_<lab>_trend(current,
+    metrics) -> str | None` function and register it in
+    _TREND_INTERPRETERS. The dispatch is intentionally explicit — each
+    lab's clinical thresholds differ and shouldn't be inferred from
+    rules.json magic.
     """
     if not metrics.get("available"):
         return None
-    return None
+    interp = _TREND_INTERPRETERS.get(lab_id)
+    if interp is None:
+        return None
+    return interp(current_value, metrics)
 
 
 # ---------- Serology / qualitative interpreters ----------

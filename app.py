@@ -167,13 +167,17 @@ tab_manual, tab_paste, tab_shot, tab_sero = st.tabs(
 panel_result: dict | None = None
 serology_result: dict | None = None
 
+_NUMERIC_LAB_IDS = sorted(
+    lab_id for lab_id, lab_def in rules["labs"].items()
+    if lab_def.get("kind") != "serology"
+)
+
 with tab_manual:
     cols = st.columns([2, 1])
     with cols[0]:
-        lab_choices = sorted(rules["labs"].keys())
         lab_id = st.selectbox(
             "Lab",
-            options=lab_choices,
+            options=_NUMERIC_LAB_IDS,
             format_func=lambda lid: rules["labs"][lid]["display_name"],
         )
     with cols[1]:
@@ -181,8 +185,45 @@ with tab_manual:
             "Value", min_value=0.0, value=0.0, step=0.1, format="%.2f"
         )
 
+    with st.expander("Prior values (optional — for trend interpretation)"):
+        st.caption(
+            "Add prior results to enable trend analysis (PSA velocity, "
+            "Cr KDIGO trend, A1C trajectory, etc.). Use ISO dates "
+            "(YYYY-MM-DD); rows with unparseable dates or empty values "
+            "are skipped."
+        )
+        prior_rows_key = f"manual_priors_{lab_id}"
+        prior_rows = st.session_state.get(prior_rows_key, [])
+        edited_priors = st.data_editor(
+            prior_rows,
+            num_rows="dynamic",
+            use_container_width=True,
+            column_config={
+                "date_str": st.column_config.TextColumn(
+                    "Date (YYYY-MM-DD)", required=False,
+                ),
+                "value": st.column_config.NumberColumn(
+                    "Value", required=False, format="%.2f",
+                ),
+            },
+            key=f"manual_prior_editor_{lab_id}",
+        )
+        st.session_state[prior_rows_key] = edited_priors
+
     if st.button("Evaluate", key="manual_eval") and value > 0:
-        panel_result = evaluate_panel([(lab_id, value)], rules, context)
+        priors_by_lab = {}
+        if edited_priors:
+            cleaned = [
+                {"value": r.get("value"), "date_str": r.get("date_str")}
+                for r in edited_priors
+                if r.get("value") is not None and r.get("date_str")
+            ]
+            if cleaned:
+                priors_by_lab[lab_id] = cleaned
+        panel_result = evaluate_panel(
+            [(lab_id, value)], rules, context,
+            priors_by_lab=priors_by_lab or None,
+        )
 
 with tab_paste:
     text_in = st.text_area(
@@ -520,6 +561,25 @@ def render_result(result: dict, derived: dict) -> None:
         and derived.get("anemia_workup")
     ):
         st.info(derived["anemia_workup"])
+
+    trend = result.get("trend") or {}
+    if trend.get("available"):
+        baseline = trend.get("baseline_value")
+        baseline_date = trend.get("baseline_date") or "?"
+        delta = trend.get("delta")
+        velocity = trend.get("velocity_per_year")
+        direction = trend.get("direction") or "?"
+        unit = result.get("unit", "")
+        line = (
+            f"**Trend:** prior {baseline} {unit} ({baseline_date}) → "
+            f"current {result['value']} {unit}  ·  "
+            f"Δ {delta:+} {unit}  ·  "
+            f"velocity {velocity if velocity is not None else '—'}/year  ·  "
+            f"direction: {direction}"
+        )
+        st.markdown(line)
+        if trend.get("interpretation"):
+            st.info(trend["interpretation"])
 
     _plot_lab_bar(result)
 
