@@ -190,10 +190,43 @@ demos with synthetic data but is not appropriate for real clinical use.
 above. Future per-lab context expansions (pediatric ALP, sex/age PSA
 bands, etc.) live in Phase 3 alongside the qualitative interpreters.
 
-**Phase 3 — closed.** Qualitative interpreters and risk-stratified
-panels shipped above. Future Phase-3-style content (additional STIs,
-TB drug susceptibility, urine dipstick patterns, etc.) lives in
-Phase 4 alongside the trend timeline UI.
+- **Trend-aware interpretation** for trendable labs. Manual entry
+  tab now exposes a "Prior values" expander with a date + value
+  table; priors flow through `evaluate_panel(priors_by_lab=...)` and
+  the engine attaches a `trend` block (delta, velocity per year,
+  direction, baseline metadata) to each lab result. Lab-specific
+  interpreters surface clinically meaningful narratives:
+  - **PSA**: >0.75 ng/mL/year velocity prompts urology referral
+    even within reference range; declining velocity reads as
+    treatment response.
+  - **Creatinine**: when prior is within the 7-day KDIGO window,
+    classifies the AKI stage (1 / 2 / 3) using the same boundaries
+    as `compute_kdigo_aki_stage`; older priors describe
+    chronic uptrend / downtrend.
+  - **A1C**: ±0.5% threshold per ADA; improving regimens are
+    reinforced, worsening prompts intensification review.
+  - **Potassium**: distinguishes acute swings (medication / GI /
+    cardiac risk) from chronic drift (CKD progression, RAAS
+    burden); refractory falls prompt Mg check.
+  - **Hemoglobin**: acute drops (>1 g/dL in <14 days) trigger
+    bleeding / hemolysis workup; chronic decline routes to
+    MCV-based anemia workup; recovery reads as treatment response.
+  - **ALT**: ≥50% drop = resolving acute hepatitis; persistent
+    ≥6 months prompts MASLD case-finding + chronic-hepatitis
+    workup (FIB-4, viral, autoimmune, iron / Wilson's / A1AT).
+  - **LDL**: ≥50% reduction = high-intensity statin response per
+    ACC/AHA; 30–49% = moderate-intensity; ≥20% rise prompts
+    adherence / secondary-cause review.
+  - **TSH**: normalization on levothyroxine reads as adequate
+    replacement; worsening on therapy prompts adherence / timing /
+    absorption review (calcium, iron, coffee, PPI, celiac);
+    recovery from suppression on antithyroid Rx reads as
+    treatment response.
+
+**Phase 4 — closed.** Trend interpretation shipped above. Future
+extensions (graph rendering, multi-lab trend overlays, prior-value
+import from Genesis screenshot) can layer on the existing
+infrastructure without further engine changes.
 
 **Phase 4 — trends:**
 - Per-lab "+ Add prior value" timeline UI for trend-aware labs

@@ -473,10 +473,199 @@ def _interpret_a1c_trend(current: float, m: dict) -> str | None:
     )
 
 
+def _interpret_k_trend(current: float, m: dict) -> str | None:
+    """Potassium — distinguishes acute swings (medication / GI / cardiac
+    risk) from chronic drift (CKD progression, chronic diuretic burden)."""
+    span_d = m.get("span_days")
+    delta = m.get("delta")
+    baseline = m.get("baseline_value")
+    if span_d is None or delta is None or baseline is None:
+        return None
+    direction = m.get("direction")
+    if span_d <= 14 and delta >= 0.5:
+        return (
+            f"K trending up acutely: {baseline} → {current} mEq/L over "
+            f"{span_d}d (Δ +{delta}). Review ACEi / ARB / spironolactone / "
+            "K-supplements / NSAIDs; ECG if K ≥5.5; recheck non-hemolyzed."
+        )
+    if span_d <= 14 and delta <= -0.5:
+        return (
+            f"K trending down acutely: {baseline} → {current} mEq/L over "
+            f"{span_d}d (Δ {delta}). Review GI losses (vomiting / diarrhea), "
+            "thiazide / loop diuretic, insulin / β-agonist; check Mg "
+            "(refractory K is often hypomagnesemic)."
+        )
+    if direction == "rising":
+        return (
+            f"K chronic uptrend: {baseline} → {current} mEq/L over "
+            f"{m['span_years']} y. Reassess CKD progression, medication "
+            "burden, dietary K; consider K-binder if persistent ≥5.5 with "
+            "essential RAAS therapy."
+        )
+    if direction == "falling":
+        return (
+            f"K chronic downtrend: {baseline} → {current} mEq/L over "
+            f"{m['span_years']} y. Reassess chronic diuretic use, "
+            "nutritional intake; check Mg."
+        )
+    return f"K stable since {m['baseline_date']} (Δ {delta:+} over {m['span_years']} y)."
+
+
+def _interpret_hgb_trend(current: float, m: dict) -> str | None:
+    """Hgb — acute drops trigger bleeding / hemolysis workup; chronic
+    drops are workup-by-MCV (already shipped); recovery is treatment
+    response."""
+    span_d = m.get("span_days")
+    delta = m.get("delta")
+    baseline = m.get("baseline_value")
+    if span_d is None or delta is None or baseline is None:
+        return None
+    if span_d <= 14 and delta <= -1.0:
+        return (
+            f"Hgb dropped {abs(delta)} g/dL over {span_d}d ({baseline} → "
+            f"{current}). Acute drop warrants bleeding workup (stool guaiac, "
+            "GI evaluation, type & screen), hemolysis labs (LDH, haptoglobin, "
+            "indirect bili, retic), and hemodynamic / orthostatic check."
+        )
+    if span_d <= 14 and delta >= 1.0:
+        return (
+            f"Hgb rose {delta} g/dL over {span_d}d ({baseline} → {current}) "
+            "— consistent with transfusion or rapid volume contraction; "
+            "check post-transfusion CBC + 24-hour stability."
+        )
+    if delta <= -1.0:
+        return (
+            f"Hgb chronic decline: {baseline} → {current} g/dL over "
+            f"{m['span_years']} y. MCV-based anemia workup (iron studies, "
+            "B12 / folate, retic, peripheral smear); GI evaluation if "
+            "iron-deficient adult male or post-menopausal female."
+        )
+    if delta >= 1.0:
+        return (
+            f"Hgb chronic improvement: {baseline} → {current} g/dL — "
+            "consistent with iron / B12 / folate replacement, EPO therapy, "
+            "or resolution of underlying disease."
+        )
+    return f"Hgb stable since {m['baseline_date']} (Δ {delta:+} g/dL)."
+
+
+def _interpret_alt_trend(current: float, m: dict) -> str | None:
+    """ALT — distinguishes resolving acute hepatitis from persistent
+    elevation (chronic viral / MASLD / autoimmune)."""
+    span_d = m.get("span_days")
+    delta = m.get("delta")
+    baseline = m.get("baseline_value")
+    delta_pct = m.get("delta_pct")
+    if span_d is None or delta is None or baseline is None or baseline <= 0:
+        return None
+    # Improvement: large drop, especially within months
+    if delta_pct is not None and delta_pct <= -50:
+        return (
+            f"ALT improving substantially: {baseline} → {current} U/L over "
+            f"{m['span_years']} y ({delta_pct}%). Consistent with resolving "
+            "acute hepatitis (drug-induced, viral, ischemic) — continue "
+            "monitoring until normalized; review timing relative to "
+            "withdrawn agent / viral clearance."
+        )
+    # Persistent elevation > 6 months: chronic
+    if span_d >= 180 and current > baseline * 0.7:
+        return (
+            f"ALT persistently elevated: {baseline} → {current} U/L over "
+            f"{m['span_years']} y. Persistent ≥6 months warrants FIB-4, "
+            "MASLD case-finding (BMI / A1C / lipids), HBV / HCV serology, "
+            "second-tier workup (iron studies, ANA / ASMA / IgG, "
+            "ceruloplasmin if <40, A1AT)."
+        )
+    if delta_pct is not None and delta_pct >= 50:
+        return (
+            f"ALT worsening: {baseline} → {current} U/L over "
+            f"{m['span_years']} y ({delta_pct:+}%). Reassess hepatotoxic "
+            "exposures, alcohol, new medications, viral hepatitis."
+        )
+    return f"ALT relatively stable since {m['baseline_date']} (Δ {delta:+} U/L)."
+
+
+def _interpret_ldl_trend(current: float, m: dict) -> str | None:
+    """LDL — primary treatment-response marker. Per ACC/AHA, high-intensity
+    statin should produce ≥50% LDL reduction; moderate-intensity 30–49%."""
+    delta_pct = m.get("delta_pct")
+    baseline = m.get("baseline_value")
+    span_y = m.get("span_years")
+    if delta_pct is None or baseline is None:
+        return None
+    if delta_pct <= -50:
+        return (
+            f"LDL improved ≥50%: {baseline} → {current} mg/dL ({delta_pct}%) "
+            f"over {span_y} y. Consistent with high-intensity statin response "
+            "per ACC/AHA — continue regimen and reassess yearly."
+        )
+    if delta_pct <= -30:
+        return (
+            f"LDL improved 30–49%: {baseline} → {current} mg/dL ({delta_pct}%) "
+            f"over {span_y} y. Consistent with moderate-intensity statin "
+            "response. If 10-yr ASCVD ≥7.5% or other risk-enhancing factors, "
+            "consider intensification per ACC/AHA."
+        )
+    if delta_pct >= 20:
+        return (
+            f"LDL worsening: {baseline} → {current} mg/dL ({delta_pct:+}%) "
+            f"over {span_y} y. Reassess statin adherence, diet, weight, "
+            "secondary causes (hypothyroidism, nephrotic syndrome, "
+            "cholestasis); consider PCSK9 / ezetimibe addition if at goal "
+            "previously."
+        )
+    return (
+        f"LDL relatively stable: {baseline} → {current} mg/dL "
+        f"({delta_pct:+}%) over {span_y} y."
+    )
+
+
+def _interpret_tsh_trend(current: float, m: dict) -> str | None:
+    """TSH — primary monitor for thyroid replacement / antithyroid Rx."""
+    delta = m.get("delta")
+    baseline = m.get("baseline_value")
+    span_y = m.get("span_years")
+    if delta is None or baseline is None:
+        return None
+    # Hypothyroid replacement target: TSH 0.4-4.0 typically
+    if baseline > 4.0 and current <= 4.0:
+        return (
+            f"TSH normalized: {baseline} → {current} mIU/L over {span_y} y. "
+            "Consistent with adequate levothyroxine replacement — recheck "
+            "TSH in 6–8 weeks after any dose change, then every 6–12 months."
+        )
+    if baseline > 4.0 and current > baseline:
+        return (
+            f"TSH worsening on therapy: {baseline} → {current} mIU/L. "
+            "Reassess levothyroxine adherence, timing (empty stomach, away "
+            "from calcium / iron / coffee), drug interactions (PPI, "
+            "estrogen, anticonvulsants), absorption (celiac); recheck "
+            "free T4."
+        )
+    # Hyperthyroid suppression target on antithyroid Rx
+    if baseline < 0.4 and current >= 0.4:
+        return (
+            f"TSH recovering: {baseline} → {current} mIU/L. Consistent with "
+            "antithyroid medication response or thyroiditis resolution; "
+            "free T4 + free T3; titrate dose per endocrinology."
+        )
+    if abs(delta) < 0.5:
+        return f"TSH stable since {m['baseline_date']} (Δ {delta:+} mIU/L)."
+    return (
+        f"TSH change: {baseline} → {current} mIU/L over {span_y} y "
+        f"(Δ {delta:+}). Correlate with treatment changes and free T4."
+    )
+
+
 _TREND_INTERPRETERS = {
     "psa": _interpret_psa_trend,
     "creatinine": _interpret_cr_trend,
     "hba1c": _interpret_a1c_trend,
+    "potassium": _interpret_k_trend,
+    "hemoglobin": _interpret_hgb_trend,
+    "alt": _interpret_alt_trend,
+    "ldl_cholesterol": _interpret_ldl_trend,
+    "tsh": _interpret_tsh_trend,
 }
 
 

@@ -332,3 +332,125 @@ def test_unregistered_lab_returns_none(rules):
     m = compute_trend_metrics(140, [(135, "2025-04-28")], today=today)
     text = interpret_trend("sodium", 140, m, rules["labs"]["sodium"])
     assert text is None
+
+
+# ---------- K trend ----------
+
+
+def _interp(rules, lab_id, current, prior_value, prior_date_str, today=None):
+    from engine import compute_trend_metrics, interpret_trend
+    today = today or date(2026, 4, 28)
+    m = compute_trend_metrics(current, [(prior_value, prior_date_str)], today=today)
+    return interpret_trend(lab_id, current, m, rules["labs"][lab_id])
+
+
+def test_k_acute_uptrend_review_meds(rules):
+    text = _interp(rules, "potassium", 5.6, 4.5, "2026-04-21")  # 7d
+    assert text is not None
+    assert "trending up acutely" in text.lower()
+    assert "acei" in text.lower() or "spironolactone" in text.lower()
+
+
+def test_k_acute_downtrend_check_mg(rules):
+    text = _interp(rules, "potassium", 3.2, 4.0, "2026-04-21")  # 7d
+    assert text is not None
+    assert "trending down acutely" in text.lower()
+    assert "mg" in text.lower()
+
+
+def test_k_chronic_uptrend(rules):
+    text = _interp(rules, "potassium", 5.4, 4.3, "2025-04-28")
+    assert text is not None
+    assert "chronic uptrend" in text.lower()
+    assert "ckd" in text.lower() or "raas" in text.lower()
+
+
+# ---------- Hgb trend ----------
+
+
+def test_hgb_acute_drop_bleeding_workup(rules):
+    """1.5 g/dL drop in 7 days -> acute drop language."""
+    text = _interp(rules, "hemoglobin", 11.0, 12.5, "2026-04-21")
+    assert text is not None
+    assert "dropped" in text.lower()
+    assert "bleeding" in text.lower()
+
+
+def test_hgb_chronic_decline(rules):
+    text = _interp(rules, "hemoglobin", 11.0, 13.0, "2025-04-28")
+    assert text is not None
+    assert "chronic decline" in text.lower()
+    assert "iron" in text.lower() or "mcv" in text.lower()
+
+
+def test_hgb_chronic_improvement(rules):
+    text = _interp(rules, "hemoglobin", 13.5, 11.0, "2025-04-28")
+    assert text is not None
+    assert "improvement" in text.lower()
+
+
+# ---------- ALT trend ----------
+
+
+def test_alt_resolving_after_acute(rules):
+    """ALT 200 → 60 over 6 months — >50% drop, resolving."""
+    text = _interp(rules, "alt", 60, 200, "2025-10-28")
+    assert text is not None
+    assert "improving" in text.lower() or "resolving" in text.lower()
+
+
+def test_alt_persistent_elevation(rules):
+    """ALT 80 → 75 over 1 year — persistent elevation, not improving."""
+    text = _interp(rules, "alt", 75, 80, "2025-04-28")
+    assert text is not None
+    assert "persistently" in text.lower() or "fib-4" in text.lower()
+
+
+# ---------- LDL trend ----------
+
+
+def test_ldl_high_intensity_response(rules):
+    """LDL 160 → 70 = 56% drop -> high-intensity statin response language."""
+    text = _interp(rules, "ldl_cholesterol", 70, 160, "2025-04-28")
+    assert text is not None
+    assert "≥50%" in text or "high-intensity" in text.lower()
+
+
+def test_ldl_moderate_intensity_response(rules):
+    """LDL 130 → 90 = 31% drop -> moderate-intensity statin response."""
+    text = _interp(rules, "ldl_cholesterol", 90, 130, "2025-04-28")
+    assert text is not None
+    assert "30" in text and "49" in text
+
+
+def test_ldl_worsening(rules):
+    """LDL 90 → 130 = 44% rise -> worsening."""
+    text = _interp(rules, "ldl_cholesterol", 130, 90, "2025-04-28")
+    assert text is not None
+    assert "worsening" in text.lower()
+    assert "adherence" in text.lower()
+
+
+# ---------- TSH trend ----------
+
+
+def test_tsh_normalized_on_levothyroxine(rules):
+    """TSH 8.0 → 2.5 — normalization on therapy."""
+    text = _interp(rules, "tsh", 2.5, 8.0, "2025-10-28")
+    assert text is not None
+    assert "normalized" in text.lower()
+    assert "levothyroxine" in text.lower()
+
+
+def test_tsh_worsening_on_therapy(rules):
+    """Already-elevated TSH rising further — adherence / absorption review."""
+    text = _interp(rules, "tsh", 12.0, 8.0, "2025-10-28")
+    assert text is not None
+    assert "adherence" in text.lower() or "absorption" in text.lower()
+
+
+def test_tsh_recovering_from_suppression(rules):
+    """Suppressed TSH rising back above 0.4 — antithyroid response."""
+    text = _interp(rules, "tsh", 0.5, 0.05, "2025-10-28")
+    assert text is not None
+    assert "recovering" in text.lower()
