@@ -7,8 +7,134 @@ from __future__ import annotations
 
 import json
 import re
+from datetime import date
 from pathlib import Path
-from typing import Any
+from typing import Any, NamedTuple
+
+
+class PriorValue(NamedTuple):
+    """A single prior lab observation. `date_str` is parsed leniently —
+    'YYYY-MM-DD' is preferred; freeform strings ('6 months ago') are
+    surfaced for documentation but excluded from numeric computations.
+    """
+    value: float
+    date_str: str
+
+
+def _parse_iso_date(s: str | None) -> date | None:
+    """Parse an ISO-8601 date or return None on any failure. Whitespace
+    is stripped; non-ISO strings (e.g. '6 months ago') return None and
+    the caller can still display the raw string."""
+    if not s or not isinstance(s, str):
+        return None
+    s = s.strip()
+    if not s:
+        return None
+    try:
+        return date.fromisoformat(s)
+    except ValueError:
+        return None
+
+
+def _normalize_priors(
+    priors: list | None,
+) -> list[tuple[float, date]]:
+    """Coerce a heterogeneous prior list into [(value, date), ...] sorted
+    newest-first. Accepts PriorValue tuples or (value, date_str) tuples
+    or {'value': ..., 'date_str': ...} dicts. Drops any entry without
+    both a parseable numeric value and a parseable ISO date."""
+    if not priors:
+        return []
+    out: list[tuple[float, date]] = []
+    for p in priors:
+        if isinstance(p, PriorValue):
+            v, d = p.value, p.date_str
+        elif isinstance(p, dict):
+            v = p.get("value")
+            d = p.get("date_str") or p.get("date")
+        elif isinstance(p, (tuple, list)) and len(p) >= 2:
+            v, d = p[0], p[1]
+        else:
+            continue
+        try:
+            v = float(v)
+        except (TypeError, ValueError):
+            continue
+        parsed = _parse_iso_date(d)
+        if parsed is None:
+            continue
+        out.append((v, parsed))
+    out.sort(key=lambda item: item[1], reverse=True)
+    return out
+
+
+def compute_trend_metrics(
+    current_value: float | None,
+    priors: list | None,
+    today: date | None = None,
+) -> dict:
+    """Compute velocity (per year), delta (vs most recent prior),
+    direction, and anchor metadata for a current value + prior list.
+
+    Returns a stable shape so callers can rely on the keys whether or
+    not priors were supplied:
+
+        {
+          "available": bool,         # True iff at least one usable prior
+          "n_priors": int,
+          "velocity_per_year": float | None,
+          "delta": float | None,             # current - most-recent prior
+          "delta_pct": float | None,         # % change vs most recent
+          "direction": str | None,           # "rising" / "falling" / "stable"
+          "baseline_value": float | None,    # most-recent prior's value
+          "baseline_date": str | None,       # ISO date string
+          "span_days": int | None,           # days between baseline and today
+          "span_years": float | None,
+        }
+
+    `today` is overrideable for tests; defaults to date.today().
+    """
+    empty = {
+        "available": False, "n_priors": 0,
+        "velocity_per_year": None, "delta": None, "delta_pct": None,
+        "direction": None, "baseline_value": None, "baseline_date": None,
+        "span_days": None, "span_years": None,
+    }
+    if current_value is None:
+        return empty
+
+    normalized = _normalize_priors(priors)
+    if not normalized:
+        return empty
+
+    baseline_value, baseline_date = normalized[0]
+    anchor = today or date.today()
+    span_days = (anchor - baseline_date).days
+    span_years = span_days / 365.25 if span_days else 0.0
+
+    delta = current_value - baseline_value
+    delta_pct = (delta / baseline_value * 100) if baseline_value else None
+    velocity = (delta / span_years) if span_years and span_years > 0 else None
+
+    if delta_pct is None or abs(delta_pct) < 5.0:
+        direction = "stable"
+    elif delta_pct > 0:
+        direction = "rising"
+    else:
+        direction = "falling"
+
+    return {
+        "available": True,
+        "n_priors": len(normalized),
+        "velocity_per_year": round(velocity, 3) if velocity is not None else None,
+        "delta": round(delta, 3),
+        "delta_pct": round(delta_pct, 1) if delta_pct is not None else None,
+        "direction": direction,
+        "baseline_value": baseline_value,
+        "baseline_date": baseline_date.isoformat(),
+        "span_days": span_days,
+        "span_years": round(span_years, 2),
+    }
 
 
 def load_rules(path: str | Path = "rules.json") -> dict:
@@ -198,12 +324,18 @@ def evaluate(
     value: float,
     rules: dict,
     context: dict | None = None,
+    priors: list | None = None,
 ) -> dict:
     """Evaluate a single lab value and return a structured result.
 
     Result keys: lab_id, display_name, value, unit, severity, follow_up,
     follow_up_branch, threshold_used_default, differentiation, thresholds,
     sources. On unknown lab_id returns {lab_id, value, error}.
+
+    If `priors` is supplied (list of PriorValue, (value, date_str) tuples,
+    or {"value": ..., "date_str": ...} dicts), a `trend` block is attached
+    to the result with velocity / delta / direction / baseline metadata.
+    Lab-specific trend interpretation text comes from `interpret_trend`.
     """
     lab_def = rules.get("labs", {}).get(lab_id)
     if not lab_def:
@@ -221,6 +353,10 @@ def evaluate(
     }
     rendered = render_follow_up(follow_up_def, slots) if follow_up_def else None
 
+    trend = compute_trend_metrics(value, priors)
+    if trend["available"]:
+        trend["interpretation"] = interpret_trend(lab_id, value, trend, lab_def)
+
     return {
         "lab_id": lab_id,
         "display_name": lab_def.get("display_name", lab_id),
@@ -235,7 +371,30 @@ def evaluate(
         "differentiation": lab_def.get("differentiation"),
         "thresholds": thresholds,
         "sources": lab_def.get("sources", []),
+        "trend": trend,
     }
+
+
+def interpret_trend(
+    lab_id: str,
+    current_value: float,
+    metrics: dict,
+    lab_def: dict,
+) -> str | None:
+    """Return a lab-specific narrative for the trend metrics, or None
+    if no trend interpretation is defined for this lab. The numeric
+    metrics already include velocity / delta / direction; this layer
+    adds clinical meaning ('PSA velocity >0.75 ng/mL/year warrants
+    urology referral', 'A1C improving — maintain regimen', etc.).
+
+    Specific lab interpreters live alongside this dispatch and are
+    added incrementally — the empty default keeps the trend block
+    informational (just numbers) for any lab without a custom
+    interpreter yet.
+    """
+    if not metrics.get("available"):
+        return None
+    return None
 
 
 # ---------- Serology / qualitative interpreters ----------
@@ -742,6 +901,7 @@ def evaluate_panel(
     lab_inputs: list[tuple[str, float]],
     rules: dict,
     context: dict | None = None,
+    priors_by_lab: dict | None = None,
 ) -> dict:
     """Evaluate a list of (lab_id, value) inputs and compute derived values.
 
@@ -763,7 +923,11 @@ def evaluate_panel(
             }
         }
     """
-    results = [evaluate(lab_id, value, rules, context) for lab_id, value in lab_inputs]
+    priors_by_lab = priors_by_lab or {}
+    results = [
+        evaluate(lab_id, value, rules, context, priors=priors_by_lab.get(lab_id))
+        for lab_id, value in lab_inputs
+    ]
     values_by_lab = {
         r["lab_id"]: r["value"] for r in results if "lab_id" in r and "error" not in r
     }
