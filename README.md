@@ -8,6 +8,19 @@ direction language at critical tiers.
 > **De-identified data only.** Do not paste PHI/PII into this tool. See
 > [Hosting and PHI](#hosting-and-phi) below before using on real patient data.
 
+## 🚀 Launch locally
+
+1. **Double-click** [`run.sh`](run.sh) (Mac / Linux) or
+   [`run.bat`](run.bat) (Windows) — installs dependencies on first run,
+   then starts Streamlit and opens your browser automatically.
+2. Or, from a terminal in the repo root: `streamlit run app.py`
+3. Once running, the app is at **<http://localhost:8501>**.
+
+> The link above is clickable but only works while the server is
+> running. The first launch will install ~10 PyPI packages
+> (`streamlit`, `matplotlib`, `anthropic`, `pyprevent`); subsequent
+> launches skip that step.
+
 ---
 
 ## What it does
