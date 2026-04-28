@@ -137,23 +137,43 @@ demos with synthetic data but is not appropriate for real clinical use.
   (80–100) / macrocytic (>100) and surfaces pattern-specific workup
   (iron studies for micro; reticulocyte + smear for normo;
   B12/folate/TSH for macro).
-- Hepatitis B serology interpreter: 4-marker form (HBsAg / anti-HBs /
-  anti-HBc total / IgM) → matches one of seven named patterns
-  (acute, chronic, window period, resolved, vaccinated, lone
-  anti-HBc, susceptible) with paste-ready EHR plan and patient
-  communication per CDC and AASLD 2018 guidance. Establishes the
-  qualitative-interpreter scaffolding (`kind: "serology"` schema +
-  `evaluate_serology` engine function + Serology tab) that the
-  remaining Phase 3 interpreters reuse.
+- **CDC STI panel — qualitative interpreters** built on the
+  `kind: "serology"` schema + `evaluate_serology` engine function +
+  Serology tab. Every positive pattern surfaces the full STI
+  co-infection screen (HIV, syphilis, HBV, HCV, GC, CT, trichomonas)
+  and a preventive medicine consult for partner notification +
+  public-health reporting:
+  - **Hepatitis B serology** (HBsAg / anti-HBs / anti-HBc total /
+    IgM) → 7 named patterns + indeterminate per CDC + AASLD 2018.
+  - **HIV reactive flow** (4th-gen Ag/Ab → HIV-1/HIV-2 differentiation
+    → HIV-1 RNA) per CDC algorithm: non-reactive, confirmed, acute
+    HIV-1 (antibody-negative window), false-reactive screen,
+    indeterminate.
+  - **Syphilis (reverse sequence)** (treponemal screen → reflex
+    non-treponemal RPR) per CDC + MMWR 2011: non-reactive, active /
+    recent, treponemal-only (past treated / late / BFP), RPR-only
+    (likely BFP), indeterminate.
+  - **Hepatitis C** (anti-HCV → reflex RNA): non-reactive, chronic
+    active (links to direct-acting antiviral therapy), resolved,
+    indeterminate.
+  - **Gonorrhea NAAT**: positive triggers ceftriaxone 500 mg IM ×1
+    + empiric chlamydia treatment per CDC 2021.
+  - **Chlamydia NAAT**: positive triggers doxycycline 100 mg BID ×7d
+    (or azithromycin 1 g ×1 in pregnancy, doxycycline ×21 days for
+    LGV proctitis) per CDC 2021.
+  - **Trichomonas NAAT**: positive triggers metronidazole 500 mg BID
+    ×7 days for women / pregnancy (preferred over single 2 g dose
+    per CDC 2021 update); 2 g ×1 for men.
+  - **HSV type-specific serology** (HSV-1 IgG / HSV-2 IgG): no
+    exposure / HSV-1 only / HSV-2 only (offers PrEP given increased
+    HIV acquisition risk) / dual.
 
 **Phase 2 — closed.** Pregnancy and age-adjusted thresholds shipped
 above. Future per-lab context expansions (pediatric ALP, sex/age PSA
 bands, etc.) live in Phase 3 alongside the qualitative interpreters.
 
 **Phase 3 — qualitative interpreters + panel patterns:**
-- Syphilis sequence (treponemal / non-treponemal RPR titer).
-- HIV reactive flow (4th-gen Ag/Ab → confirmatory).
-- TB PPD risk-stratified induration cutoffs.
+- TB PPD / IGRA risk-stratified induration cutoffs.
 - PSA age-specific bands.
 
 **Phase 4 — trends:**

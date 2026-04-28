@@ -262,3 +262,117 @@ def test_hcv_resolved(rules):
 def test_hcv_indeterminate_when_anti_hcv_only(rules):
     r = _hcv(rules, anti_hcv=True)
     assert r["pattern_id"] == "indeterminate"
+
+
+# ---------- GC NAAT ----------
+
+
+def test_gc_naat_negative(rules):
+    r = evaluate_serology("gonorrhea_naat", {"gc_naat_positive": False}, rules)
+    assert r["pattern_id"] == "negative"
+
+
+def test_gc_naat_positive_treats_for_chlamydia(rules):
+    r = evaluate_serology("gonorrhea_naat", {"gc_naat_positive": True}, rules)
+    assert r["pattern_id"] == "positive"
+    plan = r["ehr_plan"].lower()
+    assert "ceftriaxone" in plan
+    assert "doxycycline" in plan or "azithromycin" in plan
+    assert "preventive medicine" in plan
+
+
+# ---------- CT NAAT ----------
+
+
+def test_ct_naat_negative(rules):
+    r = evaluate_serology("chlamydia_naat", {"ct_naat_positive": False}, rules)
+    assert r["pattern_id"] == "negative"
+
+
+def test_ct_naat_positive_doxycycline_first(rules):
+    r = evaluate_serology("chlamydia_naat", {"ct_naat_positive": True}, rules)
+    assert r["pattern_id"] == "positive"
+    plan = r["ehr_plan"].lower()
+    assert "doxycycline" in plan
+    assert "preventive medicine" in plan
+
+
+# ---------- Trichomonas NAAT ----------
+
+
+def test_trichomonas_naat_negative(rules):
+    r = evaluate_serology("trichomonas_naat", {"tv_naat_positive": False}, rules)
+    assert r["pattern_id"] == "negative"
+
+
+def test_trichomonas_naat_positive_metronidazole_7d(rules):
+    r = evaluate_serology("trichomonas_naat", {"tv_naat_positive": True}, rules)
+    assert r["pattern_id"] == "positive"
+    plan = r["ehr_plan"].lower()
+    assert "metronidazole" in plan
+    # CDC 2021 update — 7d preferred for women over single 2g dose
+    assert "7 days" in plan
+
+
+# ---------- HSV type-specific serology ----------
+
+
+def _hsv(rules: dict, **markers) -> dict:
+    inputs = {
+        "hsv_1_igg": markers.get("hsv_1_igg"),
+        "hsv_2_igg": markers.get("hsv_2_igg"),
+    }
+    return evaluate_serology("hsv_serology", inputs, rules)
+
+
+def test_hsv_no_exposure(rules):
+    r = _hsv(rules, hsv_1_igg=False, hsv_2_igg=False)
+    assert r["pattern_id"] == "no_exposure"
+
+
+def test_hsv_1_only(rules):
+    r = _hsv(rules, hsv_1_igg=True, hsv_2_igg=False)
+    assert r["pattern_id"] == "hsv_1_only"
+
+
+def test_hsv_2_only_includes_prep_offer(rules):
+    """HSV-2+ should mention PrEP given increased HIV acquisition risk."""
+    r = _hsv(rules, hsv_1_igg=False, hsv_2_igg=True)
+    assert r["pattern_id"] == "hsv_2_only"
+    plan = r["ehr_plan"].lower()
+    assert "prep" in plan
+    assert "preventive medicine" in plan
+
+
+def test_hsv_dual(rules):
+    r = _hsv(rules, hsv_1_igg=True, hsv_2_igg=True)
+    assert r["pattern_id"] == "hsv_dual"
+
+
+# ---------- Coverage check: every serology lab is reachable ----------
+
+
+def test_all_serology_labs_have_at_least_one_pattern(rules):
+    for lab_id, lab_def in rules["labs"].items():
+        if lab_def.get("kind") != "serology":
+            continue
+        assert lab_def.get("patterns"), f"{lab_id} has no patterns"
+        for p in lab_def["patterns"]:
+            assert "id" in p and "label" in p, f"{lab_id} pattern missing id/label"
+            # Every positive pattern (anything not 'negative' / 'non_reactive' /
+            # 'no_exposure' / 'vaccinated' / 'susceptible' / 'resolved*') should
+            # reference preventive medicine — STI cross-reference convention.
+            negative_ids = {
+                "negative", "non_reactive", "no_exposure",
+                "non_reactive_screen", "vaccinated", "susceptible",
+                "resolved_infection", "resolved",
+                # patterns that suggest the test was a false positive
+                # (no real infection, no contact tracing needed):
+                "false_reactive_screen", "rpr_only",
+            }
+            if p["id"] in negative_ids:
+                continue
+            plan = (p.get("ehr_plan") or "").lower()
+            assert "preventive medicine" in plan, (
+                f"{lab_id}.{p['id']} missing preventive medicine consult"
+            )

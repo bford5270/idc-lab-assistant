@@ -1966,6 +1966,198 @@
         "CDC HCV Testing Recommendations (2020 universal screening update)",
         "CDC STI Treatment Guidelines 2021"
       ]
+    },
+
+    "gonorrhea_naat": {
+      "display_name": "Gonorrhea NAAT (N. gonorrhoeae)",
+      "kind": "serology",
+      "inputs": [
+        { "id": "gc_naat_positive", "label": "GC NAAT positive (any site — urine, cervical, urethral, pharyngeal, rectal)", "loinc": "47387-7" }
+      ],
+      "patterns": [
+        {
+          "id": "negative",
+          "label": "GC NAAT negative",
+          "match": { "gc_naat_positive": false },
+          "category": "GC NAAT negative — no laboratory evidence of gonorrhea",
+          "next_tests": [
+            "If symptomatic or recent exposure: consider repeat in 1–2 weeks (early infection may not yet be detectable).",
+            "Continue full STI panel: HIV (4th-gen Ag/Ab), syphilis (treponemal + RPR), HBV serology, HCV (anti-HCV w/ reflex RNA), CT NAAT, trichomonas if female."
+          ],
+          "ehr_plan": "GC NAAT negative. Plan: continue full STI panel; if symptomatic or recent exposure, consider repeat in 1–2 weeks.",
+          "patient_communication": "Your gonorrhea test is negative. Please complete the rest of the STI testing today."
+        },
+        {
+          "id": "positive",
+          "label": "Gonorrhea positive — treat per CDC 2021",
+          "match": { "gc_naat_positive": true },
+          "category": "Active gonorrhea — treat empirically for chlamydia co-infection unless CT NAAT negative",
+          "next_tests": [
+            "Test of cure NOT routinely needed for uncomplicated urogenital or rectal GC; recommended for pharyngeal GC (NAAT 7–14 days post-treatment).",
+            "Re-screen at 3 months for re-infection (any site).",
+            "CT NAAT (treat empirically for CT unless NAAT negative — CDC 2021).",
+            "Full STI co-infection screen: HIV (4th-gen Ag/Ab), syphilis (treponemal + RPR), HBV serology, HCV (anti-HCV w/ reflex RNA), trichomonas if female.",
+            "Pregnancy test if reproductive-age female.",
+            "Discuss with preventive medicine for partner notification (expedited partner therapy where legally permitted) and public-health reporting (GC is reportable in all states).",
+            "Treatment per CDC 2021: ceftriaxone 500 mg IM × 1 (1 g if weight ≥150 kg); if ceftriaxone unavailable — gentamicin 240 mg IM + azithromycin 2 g PO × 1, or cefixime 800 mg PO × 1 (only if pharyngeal infection ruled out). Treat for chlamydia (doxycycline 100 mg BID × 7 days, or azithromycin 1 g × 1 in pregnancy) unless CT NAAT confirms negative."
+          ],
+          "ehr_plan": "GC NAAT positive. Plan: ceftriaxone 500 mg IM × 1 (1 g if weight ≥150 kg) per CDC 2021; treat empirically for CT (doxycycline 100 mg BID × 7 d; azithromycin 1 g × 1 in pregnancy) unless CT NAAT confirms negative; full STI co-infection screen (HIV 4th-gen, syphilis treponemal + RPR, HBV serology, HCV w/ reflex RNA, trichomonas if female); pregnancy test if applicable; preventive medicine consult for partner notification (EPT where legal) + public-health reporting; re-screen at 3 months for re-infection; test of cure for pharyngeal GC at 7–14 days.",
+          "patient_communication": "Your gonorrhea test is positive. Gonorrhea is treated with a single antibiotic shot (ceftriaxone) and we will also treat you for chlamydia at the same time, since the two infections often occur together. We will test you for other sexually transmitted infections (HIV, syphilis, hepatitis B and C, trichomonas) and the preventive medicine team will help with notifying recent partners — this is required by public health law and is confidential. Avoid sex for 7 days after treatment and until partners are treated. We will re-test you in 3 months to make sure you are not re-infected."
+        }
+      ],
+      "sources": [
+        "CDC STI Treatment Guidelines 2021 (Gonococcal Infections)"
+      ]
+    },
+
+    "chlamydia_naat": {
+      "display_name": "Chlamydia NAAT (C. trachomatis)",
+      "kind": "serology",
+      "inputs": [
+        { "id": "ct_naat_positive", "label": "CT NAAT positive (any site — urine, cervical, urethral, pharyngeal, rectal)", "loinc": "47388-5" }
+      ],
+      "patterns": [
+        {
+          "id": "negative",
+          "label": "CT NAAT negative",
+          "match": { "ct_naat_positive": false },
+          "category": "CT NAAT negative — no laboratory evidence of chlamydia",
+          "next_tests": [
+            "Continue full STI panel: HIV (4th-gen Ag/Ab), syphilis (treponemal + RPR), HBV serology, HCV (anti-HCV w/ reflex RNA), GC NAAT, trichomonas if female."
+          ],
+          "ehr_plan": "CT NAAT negative. Plan: continue full STI panel.",
+          "patient_communication": "Your chlamydia test is negative. Please complete the rest of the STI testing today."
+        },
+        {
+          "id": "positive",
+          "label": "Chlamydia positive — treat per CDC 2021",
+          "match": { "ct_naat_positive": true },
+          "category": "Active chlamydia infection — treat per CDC 2021",
+          "next_tests": [
+            "Re-screen at 3 months for re-infection.",
+            "Test of cure NOT routinely needed for uncomplicated CT (except in pregnancy — re-test at 4 weeks post-treatment).",
+            "GC NAAT (treat empirically for GC if not yet known — co-infection common).",
+            "Full STI co-infection screen: HIV (4th-gen Ag/Ab), syphilis (treponemal + RPR), HBV serology, HCV (anti-HCV w/ reflex RNA), trichomonas if female.",
+            "Pregnancy test if reproductive-age female (changes treatment).",
+            "If proctitis, consider lymphogranuloma venereum (LGV) genotyping (CDC reference lab).",
+            "Discuss with preventive medicine for partner notification (expedited partner therapy where legally permitted) and public-health reporting (CT is reportable in all states).",
+            "Treatment per CDC 2021: doxycycline 100 mg PO BID × 7 days (preferred for non-pregnant adults — supersedes single-dose azithromycin for urogenital and rectal infection); pregnancy — azithromycin 1 g PO × 1 (or amoxicillin 500 mg PO TID × 7 d as alternative); LGV proctitis — doxycycline 100 mg PO BID × 21 days."
+          ],
+          "ehr_plan": "CT NAAT positive. Plan: doxycycline 100 mg PO BID × 7 days (azithromycin 1 g × 1 in pregnancy; doxycycline × 21 days for LGV proctitis) per CDC 2021; co-treat empirically for GC if not yet known; full STI co-infection screen (HIV 4th-gen, syphilis treponemal + RPR, HBV serology, HCV w/ reflex RNA, trichomonas if female); pregnancy test if applicable; preventive medicine consult for partner notification (EPT where legal) + public-health reporting; re-screen at 3 months for re-infection; test of cure at 4 weeks for pregnant patients.",
+          "patient_communication": "Your chlamydia test is positive. Chlamydia is easily treated with antibiotic pills (doxycycline twice daily for 7 days, or a single dose of azithromycin if you are pregnant). We will also test you for other sexually transmitted infections (HIV, syphilis, hepatitis B and C, gonorrhea, trichomonas). The preventive medicine team will help with notifying recent partners — this is required by public health law and is confidential. Avoid sex for 7 days after starting treatment and until partners are treated. We will re-test you in 3 months to make sure you are not re-infected."
+        }
+      ],
+      "sources": [
+        "CDC STI Treatment Guidelines 2021 (Chlamydial Infections)"
+      ]
+    },
+
+    "trichomonas_naat": {
+      "display_name": "Trichomonas NAAT (T. vaginalis)",
+      "kind": "serology",
+      "inputs": [
+        { "id": "tv_naat_positive", "label": "Trichomonas NAAT positive", "loinc": "82203-3" }
+      ],
+      "patterns": [
+        {
+          "id": "negative",
+          "label": "Trichomonas NAAT negative",
+          "match": { "tv_naat_positive": false },
+          "category": "Trichomonas NAAT negative — no laboratory evidence",
+          "next_tests": [
+            "Continue full STI panel: HIV (4th-gen Ag/Ab), syphilis (treponemal + RPR), HBV serology, HCV (anti-HCV w/ reflex RNA), GC + CT NAAT."
+          ],
+          "ehr_plan": "Trichomonas NAAT negative. Plan: continue full STI panel.",
+          "patient_communication": "Your trichomonas test is negative. Please complete the rest of the STI testing today."
+        },
+        {
+          "id": "positive",
+          "label": "Trichomonas positive — treat per CDC 2021",
+          "match": { "tv_naat_positive": true },
+          "category": "Active trichomoniasis — treat per CDC 2021",
+          "next_tests": [
+            "Re-test (NAAT) at 3 months — re-infection rate is high.",
+            "Full STI co-infection screen: HIV (4th-gen Ag/Ab), syphilis (treponemal + RPR), HBV serology, HCV (anti-HCV w/ reflex RNA), GC + CT NAAT.",
+            "Pregnancy test if reproductive-age female.",
+            "Discuss with preventive medicine for partner notification (expedited partner therapy where legally permitted; trichomonas is NOT routinely reportable but partner treatment is essential to prevent re-infection).",
+            "Treatment per CDC 2021: women — metronidazole 500 mg PO BID × 7 days (preferred over single 2 g dose; CDC 2021 update); men — metronidazole 2 g PO × 1 (single dose); pregnancy — metronidazole 500 mg BID × 7 days (safe in all trimesters per CDC 2021)."
+          ],
+          "ehr_plan": "Trichomonas NAAT positive. Plan: metronidazole 500 mg PO BID × 7 days for women and pregnancy (preferred over single 2 g dose per CDC 2021 update); 2 g PO × 1 for men; full STI co-infection screen (HIV 4th-gen, syphilis treponemal + RPR, HBV serology, HCV w/ reflex RNA, GC/CT NAAT); pregnancy test if applicable; preventive medicine consult for partner notification (EPT where legal); re-test at 3 months.",
+          "patient_communication": "Your trichomonas test is positive. Trichomonas is treated with metronidazole pills (twice daily for 7 days for women, or a single larger dose for men). We will also test you for other sexually transmitted infections (HIV, syphilis, hepatitis B and C, gonorrhea, chlamydia). The preventive medicine team will help with notifying partners so they can also be treated — re-infection is common when partners are not treated. Avoid alcohol while taking metronidazole and for 24 hours after the last dose (it causes severe nausea). Re-test in 3 months."
+        }
+      ],
+      "sources": [
+        "CDC STI Treatment Guidelines 2021 (Trichomoniasis)"
+      ]
+    },
+
+    "hsv_serology": {
+      "display_name": "HSV type-specific serology (HSV-1 IgG / HSV-2 IgG)",
+      "kind": "serology",
+      "inputs": [
+        { "id": "hsv_1_igg", "label": "HSV-1 IgG positive", "loinc": "31436-9" },
+        { "id": "hsv_2_igg", "label": "HSV-2 IgG positive", "loinc": "31435-1" }
+      ],
+      "patterns": [
+        {
+          "id": "no_exposure",
+          "label": "HSV-1 and HSV-2 IgG both negative — no prior exposure",
+          "match": { "hsv_1_igg": false, "hsv_2_igg": false },
+          "category": "No serologic evidence of HSV-1 or HSV-2",
+          "next_tests": [
+            "If recent (<12 weeks) exposure or suspicious lesion: PCR / culture of lesion (more sensitive than serology in early infection); repeat type-specific serology in 12–16 weeks for window-period coverage.",
+            "Continue full STI panel: HIV (4th-gen Ag/Ab), syphilis (treponemal + RPR), HBV serology, HCV (anti-HCV w/ reflex RNA), GC + CT NAAT, trichomonas if female."
+          ],
+          "ehr_plan": "HSV-1 and HSV-2 IgG both non-reactive. Plan: if recent exposure or suspicious lesion — PCR / culture of lesion; repeat type-specific serology in 12–16 weeks; continue full STI panel.",
+          "patient_communication": "Your HSV (herpes) blood tests are both negative. If you may have been exposed in the last few months or have a sore, the test can sometimes miss very recent infection — we will repeat in 12 to 16 weeks if needed. Please complete the rest of the STI testing today."
+        },
+        {
+          "id": "hsv_1_only",
+          "label": "HSV-1 IgG positive (oral or genital HSV-1)",
+          "match": { "hsv_1_igg": true, "hsv_2_igg": false },
+          "category": "HSV-1 seropositive — could be oral (most common, often acquired in childhood) or genital",
+          "next_tests": [
+            "Site of infection cannot be determined by serology alone — correlate with clinical history (oral cold sores vs genital lesions).",
+            "If genital HSV-1 suspected, counsel that recurrence and asymptomatic shedding are less common than HSV-2 (per CDC 2021).",
+            "Full STI co-infection screen: HIV (4th-gen Ag/Ab), syphilis (treponemal + RPR), HBV serology, HCV (anti-HCV w/ reflex RNA), GC + CT NAAT, trichomonas if female.",
+            "Discuss with preventive medicine for partner counseling (HSV is not routinely reportable but partner education is appropriate)."
+          ],
+          "ehr_plan": "HSV-1 IgG reactive, HSV-2 IgG non-reactive. DDx by clinical site: oral HSV-1 (most common, childhood acquisition) vs genital HSV-1 (recurs and sheds less often than HSV-2). Plan: correlate with clinical site; counsel on transmission, recurrence patterns, and episodic / suppressive antiviral options if symptomatic; full STI co-infection screen; preventive medicine consult for partner counseling.",
+          "patient_communication": "Your HSV-1 (herpes type 1) blood test is positive. HSV-1 most commonly causes cold sores around the mouth and is often acquired in childhood — this does not necessarily mean you have a sexually transmitted infection. HSV-1 can also cause genital herpes, but it recurs less often than HSV-2. We will discuss what this means based on whether you have ever had sores."
+        },
+        {
+          "id": "hsv_2_only",
+          "label": "HSV-2 IgG positive (genital HSV-2)",
+          "match": { "hsv_1_igg": false, "hsv_2_igg": true },
+          "category": "HSV-2 seropositive — almost always indicates genital herpes",
+          "next_tests": [
+            "Counsel on transmission risk (asymptomatic shedding is common — most transmissions occur from people who do not know they are infected).",
+            "Discuss episodic antiviral therapy for outbreaks (acyclovir, valacyclovir, famciclovir) and suppressive therapy for frequent recurrence (≥6 episodes/year) or to reduce transmission to partners.",
+            "Pregnancy: counsel on cesarean delivery if active genital lesions at onset of labor (CDC 2021); consider suppressive acyclovir from 36 weeks.",
+            "Full STI co-infection screen: HIV (4th-gen Ag/Ab — HSV-2 increases HIV acquisition risk; offer PrEP), syphilis (treponemal + RPR), HBV serology, HCV (anti-HCV w/ reflex RNA), GC + CT NAAT, trichomonas if female.",
+            "Discuss with preventive medicine for partner counseling and testing (type-specific serology for partners)."
+          ],
+          "ehr_plan": "HSV-2 IgG reactive, HSV-1 IgG non-reactive — almost always indicates genital herpes (HSV-2). Plan: counsel on asymptomatic shedding and transmission; offer episodic antiviral (acyclovir / valacyclovir / famciclovir) for outbreaks and suppressive therapy for frequent recurrence (≥6/yr) or transmission reduction; pregnancy — counsel on cesarean delivery for active lesions at labor onset and suppressive acyclovir from 36 weeks; full STI co-infection screen (HIV 4th-gen — offer PrEP given increased HIV risk; syphilis treponemal + RPR; HBV serology; HCV w/ reflex RNA; GC/CT NAAT; trichomonas if female); preventive medicine consult for partner counseling + type-specific testing.",
+          "patient_communication": "Your HSV-2 (herpes type 2) blood test is positive. HSV-2 almost always means genital herpes. Most people with HSV-2 do not have obvious symptoms — about 80% of new infections are passed by people who did not know they had it. Antiviral medications (acyclovir, valacyclovir) can shorten outbreaks if you get them, and daily medication can reduce both outbreaks and the chance of passing it to a partner. If you become pregnant, tell your obstetrician — there are steps to protect the baby. We will test for other STIs (HIV, syphilis, hepatitis B and C, gonorrhea, chlamydia, trichomonas) and discuss PrEP since HSV-2 slightly increases the chance of HIV. The preventive medicine team can help with partner counseling."
+        },
+        {
+          "id": "hsv_dual",
+          "label": "Both HSV-1 and HSV-2 IgG positive — dual infection",
+          "match": { "hsv_1_igg": true, "hsv_2_igg": true },
+          "category": "Dual HSV-1 and HSV-2 seropositivity",
+          "next_tests": [
+            "Manage HSV-2 per the hsv_2_only pattern (genital herpes).",
+            "Counsel on HSV-1 site uncertainty (oral or genital).",
+            "Full STI co-infection screen: HIV (4th-gen Ag/Ab — offer PrEP), syphilis (treponemal + RPR), HBV serology, HCV (anti-HCV w/ reflex RNA), GC + CT NAAT, trichomonas if female.",
+            "Discuss with preventive medicine for partner counseling and type-specific testing."
+          ],
+          "ehr_plan": "HSV-1 IgG AND HSV-2 IgG both reactive — dual infection. Plan: manage HSV-2 as genital herpes (episodic / suppressive antiviral; pregnancy counseling); HSV-1 site requires clinical correlation; full STI co-infection screen (HIV — offer PrEP; syphilis; HBV; HCV; GC/CT NAAT; trichomonas if female); preventive medicine consult for partner counseling.",
+          "patient_communication": "Your blood tests show you have both HSV-1 and HSV-2. HSV-2 almost always means genital herpes; HSV-1 most often causes oral cold sores but can also cause genital herpes. We will discuss antiviral medication options and counsel you on transmission. We will also test for other STIs and discuss PrEP for HIV prevention."
+        }
+      ],
+      "sources": [
+        "CDC STI Treatment Guidelines 2021 (Genital Herpes)"
+      ]
     }
   }
 }
