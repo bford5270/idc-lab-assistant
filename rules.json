@@ -2091,6 +2091,109 @@
       ]
     },
 
+    "psa": {
+      "display_name": "Prostate-Specific Antigen (PSA)",
+      "loinc": "2857-1",
+      "synonyms": ["psa", "prostate specific antigen", "prostate-specific antigen"],
+      "unit": "ng/mL",
+      "kind": "numeric",
+      "trendable": true,
+      "context_note": "Age-specific reference ranges per Oesterling et al. (1993) — used as informational reference per AUA / NCCN. Modern AUA guidance emphasizes PSA velocity (>0.75 ng/mL/year) and density (PSA / prostate volume) over a single threshold; if prior values are available use trend interpretation. PSA is not recommended for patients with limited life expectancy (<10 years) per AUA 2023.",
+      "thresholds_by_context": {
+        "default": [
+          { "severity": "Normal",        "max": 4.0 },
+          { "severity": "Mild High",     "min": 4.0,  "max": 10.0 },
+          { "severity": "Moderate High", "min": 10.0, "max": 20.0 },
+          { "severity": "Severe High",   "min": 20.0 }
+        ],
+        "age_40_49": [
+          { "severity": "Normal",        "max": 2.5 },
+          { "severity": "Mild High",     "min": 2.5,  "max": 4.0 },
+          { "severity": "Moderate High", "min": 4.0,  "max": 10.0 },
+          { "severity": "Severe High",   "min": 10.0, "max": 20.0 },
+          { "severity": "Critical High", "min": 20.0 }
+        ],
+        "age_50_59": [
+          { "severity": "Normal",        "max": 3.5 },
+          { "severity": "Mild High",     "min": 3.5,  "max": 4.5 },
+          { "severity": "Moderate High", "min": 4.5,  "max": 10.0 },
+          { "severity": "Severe High",   "min": 10.0, "max": 20.0 },
+          { "severity": "Critical High", "min": 20.0 }
+        ],
+        "age_60_69": [
+          { "severity": "Normal",        "max": 4.5 },
+          { "severity": "Mild High",     "min": 4.5,  "max": 6.5 },
+          { "severity": "Moderate High", "min": 6.5,  "max": 10.0 },
+          { "severity": "Severe High",   "min": 10.0, "max": 20.0 },
+          { "severity": "Critical High", "min": 20.0 }
+        ],
+        "age_70_plus": [
+          { "severity": "Normal",        "max": 6.5 },
+          { "severity": "Mild High",     "min": 6.5,  "max": 10.0 },
+          { "severity": "Moderate High", "min": 10.0, "max": 15.0 },
+          { "severity": "Severe High",   "min": 15.0, "max": 20.0 },
+          { "severity": "Critical High", "min": 20.0 }
+        ]
+      },
+      "follow_up": {
+        "Mild High": {
+          "category": "Mild PSA elevation for age — confirm and stratify",
+          "next_tests": [
+            "Repeat PSA in 4–6 weeks (rule out transient causes: recent UTI, prostatitis, urologic instrumentation, ejaculation within 48 h, vigorous bicycling).",
+            "DRE (digital rectal exam).",
+            "Free PSA (% free PSA <25% increases prostate cancer suspicion in this range; <10% is high suspicion).",
+            "PSA density (PSA / prostate volume by ultrasound) if prostate enlarged.",
+            "PSA velocity if prior value available — >0.75 ng/mL/year warrants attention even within reference range."
+          ],
+          "ehr_plan": "PSA = {value} ng/mL (Mild High for age). Plan: repeat PSA in 4–6 weeks (rule out UTI / prostatitis / instrumentation / recent ejaculation / cycling); DRE; free PSA; PSA density if prostate enlarged; PSA velocity if prior values; urology referral if persistent.",
+          "patient_communication": "Your PSA (prostate blood test) is mildly elevated for your age. The most common reasons are not cancer — recent infections, recent activity, or normal prostate growth. We will recheck the level in 4–6 weeks and may add additional tests (free PSA) to figure out the cause. Avoid vigorous bicycling and ejaculation for 48 hours before the repeat test."
+        },
+        "Moderate High": {
+          "category": "Moderate PSA elevation — urology referral",
+          "next_tests": [
+            "Free PSA (% free PSA).",
+            "DRE.",
+            "PSA density (TRUS or MRI for prostate volume).",
+            "Multiparametric prostate MRI (PI-RADS) before biopsy decision per AUA 2023.",
+            "Urology referral for biopsy decision (MRI-targeted + systematic if PI-RADS ≥3)."
+          ],
+          "ehr_plan": "PSA = {value} ng/mL (Moderate High for age). Plan: free PSA; DRE; multiparametric prostate MRI (PI-RADS scoring); urology referral for biopsy decision per AUA 2023 (MRI-targeted + systematic if PI-RADS ≥3); rule out recent UTI / instrumentation / ejaculation if not yet excluded.",
+          "patient_communication": "Your PSA (prostate blood test) is significantly above normal for your age. We will refer you to a urologist for additional testing, which may include an MRI of the prostate and possibly a biopsy. This does not necessarily mean you have cancer — many men with elevated PSA have an enlarged prostate or inflammation."
+        },
+        "Severe High": {
+          "category": "Severe PSA elevation — urgent urology referral",
+          "next_tests": [
+            "DRE (look for nodule, induration).",
+            "Multiparametric prostate MRI.",
+            "Free PSA.",
+            "Urgent urology referral for biopsy.",
+            "Rule out acute prostatitis (UA, urine culture; treat and recheck PSA after 4–6 weeks if confirmed)."
+          ],
+          "ehr_plan": "PSA = {value} ng/mL (Severe High). Plan: rule out acute prostatitis (UA + culture; if confirmed, treat and recheck PSA in 4–6 weeks before biopsy); DRE; multiparametric prostate MRI; urgent urology referral for MRI-targeted biopsy.",
+          "patient_communication": "Your PSA (prostate blood test) is significantly elevated. We need to refer you urgently to a urologist for an MRI and likely a biopsy. We will also check whether you have a prostate infection, which can cause similar elevations and is treatable."
+        },
+        "Critical High": {
+          "category": "Critical PSA elevation — concern for advanced disease",
+          "next_tests": [
+            "DRE.",
+            "Multiparametric prostate MRI.",
+            "Bone scan (rule out skeletal metastases — common at PSA >20).",
+            "CT abdomen / pelvis (rule out lymphadenopathy / visceral metastases).",
+            "Alkaline phosphatase, calcium (skeletal metastasis screening).",
+            "Testosterone (baseline before any androgen-deprivation therapy).",
+            "Urgent urology / oncology referral."
+          ],
+          "ehr_plan": "PSA = {value} ng/mL (Critical High). Plan: DRE; multiparametric prostate MRI; bone scan (mets common at PSA >20); CT abdomen/pelvis; ALP + calcium; baseline testosterone; urgent urology / oncology referral. If acute symptoms (urinary obstruction, bone pain, neurologic deficits) — immediate evaluation including spinal MRI for cord compression.",
+          "patient_communication": "Your PSA (prostate blood test) is very high, which raises concern for advanced prostate cancer. We need to do additional imaging (MRI of the prostate, bone scan, CT scan) and refer you urgently to a urologist and likely a cancer specialist. If you have any back pain, leg weakness, problems urinating, or unexplained bone pain, please tell us right away or go to the emergency department — these can be signs that need urgent treatment."
+        }
+      },
+      "sources": [
+        "AUA Early Detection of Prostate Cancer Guideline (2023)",
+        "NCCN Prostate Cancer Early Detection",
+        "Oesterling et al., JAMA 1993 (age-specific reference ranges)"
+      ]
+    },
+
     "hsv_serology": {
       "display_name": "HSV type-specific serology (HSV-1 IgG / HSV-2 IgG)",
       "kind": "serology",

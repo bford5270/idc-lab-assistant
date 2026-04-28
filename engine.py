@@ -20,6 +20,24 @@ def load_rules(path: str | Path = "rules.json") -> dict:
 ELDERLY_AGE_THRESHOLD = 70
 
 
+def _age_bracket_key(age: int | float | None) -> str | None:
+    """Map a numeric age to an age-bracket lookup key (PSA uses these).
+
+    Brackets follow the Oesterling-derived age-specific PSA reference
+    ranges (40-49, 50-59, 60-69, 70+). Returns None if age is missing
+    or below 40 — labs that opt into bracket bands fall back to default.
+    """
+    if age is None or age < 40:
+        return None
+    if age < 50:
+        return "age_40_49"
+    if age < 60:
+        return "age_50_59"
+    if age < 70:
+        return "age_60_69"
+    return "age_70_plus"
+
+
 def pick_thresholds(lab_def: dict, context: dict | None) -> tuple[list[dict], bool]:
     """Pick the appropriate threshold list for the given patient context.
 
@@ -30,13 +48,16 @@ def pick_thresholds(lab_def: dict, context: dict | None) -> tuple[list[dict], bo
     Lookup order — first match wins:
     1. pregnancy_T<N> (trimester-specific, when context.trimester ∈ {1, 2, 3})
     2. pregnancy (generic pregnancy fallback)
-    3. elderly (when context.age >= ELDERLY_AGE_THRESHOLD)
-    4. sex (female / male)
-    5. default
+    3. age bracket (age_40_49 / age_50_59 / age_60_69 / age_70_plus —
+       used by PSA per Oesterling-derived age-specific ranges)
+    4. elderly (when context.age >= ELDERLY_AGE_THRESHOLD; broader than
+       age_70_plus for labs that only differentiate elderly vs not)
+    5. sex (female / male)
+    6. default
 
-    Pregnancy outranks elderly because pregnancy-specific reference ranges
-    (e.g. TSH per ATA 2017, Cr per ACOG) differ from age-adjusted bands; a
-    pregnant patient should never be evaluated against elderly TSH bands.
+    Pregnancy outranks age and sex because pregnancy-specific reference
+    ranges (ATA 2017 TSH, ACOG Cr) differ fundamentally from age- or
+    sex-adjusted bands.
     """
     if "thresholds" in lab_def:
         return lab_def["thresholds"], False
@@ -54,6 +75,10 @@ def pick_thresholds(lab_def: dict, context: dict | None) -> tuple[list[dict], bo
             return by_context["pregnancy"], False
 
     age = ctx.get("age")
+    bracket = _age_bracket_key(age)
+    if bracket and bracket in by_context:
+        return by_context[bracket], False
+
     if (
         age is not None
         and age >= ELDERLY_AGE_THRESHOLD

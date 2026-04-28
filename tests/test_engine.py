@@ -671,6 +671,77 @@ def test_creatinine_pregnancy_outranks_sex(rules):
     assert find_severity(1.0, thresh) == "Mild High"
 
 
+# ---------- PSA age-specific bands ----------
+
+
+def test_psa_age_45_uses_age_40_49_band(rules):
+    """PSA 3.0 is Mild High at age 45 (40–49 band Normal <2.5) but Normal
+    in default band (<4.0)."""
+    young = evaluate("psa", 3.0, rules, {"age": 45})
+    no_age = evaluate("psa", 3.0, rules, {})
+    assert young["severity"] == "Mild High"
+    assert no_age["severity"] == "Normal"
+
+
+def test_psa_age_55_uses_age_50_59_band(rules):
+    """PSA 3.8 is Mild High at age 55 (50–59 band Normal <3.5)."""
+    res = evaluate("psa", 3.8, rules, {"age": 55})
+    assert res["severity"] == "Mild High"
+
+
+def test_psa_age_65_uses_age_60_69_band(rules):
+    """PSA 5.0 is Mild High at age 65 (60–69 band Normal <4.5) but Mild
+    High in default (4.0–10) too — both flag, different reasoning."""
+    res = evaluate("psa", 5.0, rules, {"age": 65})
+    assert res["severity"] == "Mild High"
+
+
+def test_psa_age_75_uses_age_70_plus_band(rules):
+    """PSA 5.5 is Normal at age 75 (70+ band Normal <6.5) but Mild High
+    in default (>4.0). The age-bracket band catches age-related rise."""
+    res = evaluate("psa", 5.5, rules, {"age": 75})
+    assert res["severity"] == "Normal"
+
+
+def test_psa_age_below_40_uses_default(rules):
+    """No age bracket below 40; falls through to default."""
+    res = evaluate("psa", 4.5, rules, {"age": 30})
+    # Default Normal <4.0; 4.5 is Mild High (4.0-10)
+    assert res["severity"] == "Mild High"
+    # threshold_used_default is True since no bracket key matched
+    assert res["threshold_used_default"] is True
+
+
+def test_psa_no_age_uses_default(rules):
+    res = evaluate("psa", 5.0, rules, {})
+    assert res["severity"] == "Mild High"
+    assert res["threshold_used_default"] is True
+
+
+def test_psa_pregnancy_does_not_apply(rules):
+    """PSA has no pregnancy band, but age bracket should still work
+    when pregnancy is set (PSA wouldn't be ordered in pregnant patient
+    but the engine shouldn't crash)."""
+    res = evaluate("psa", 5.0, rules, {"age": 65, "pregnancy": True})
+    # No pregnancy band on PSA, so falls to age_60_69
+    assert res["severity"] == "Mild High"
+
+
+def test_age_bracket_helper():
+    """_age_bracket_key boundary cases."""
+    from engine import _age_bracket_key
+    assert _age_bracket_key(None) is None
+    assert _age_bracket_key(39) is None
+    assert _age_bracket_key(40) == "age_40_49"
+    assert _age_bracket_key(49) == "age_40_49"
+    assert _age_bracket_key(50) == "age_50_59"
+    assert _age_bracket_key(59) == "age_50_59"
+    assert _age_bracket_key(60) == "age_60_69"
+    assert _age_bracket_key(69) == "age_60_69"
+    assert _age_bracket_key(70) == "age_70_plus"
+    assert _age_bracket_key(95) == "age_70_plus"
+
+
 # ---------- LFT pattern (R-factor) ----------
 
 
