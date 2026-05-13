@@ -15,12 +15,127 @@ from engine import (
     SEVERITY_COLORS,
     URGENCY_BY_SEVERITY,
     evaluate_panel,
+    evaluate_qualitative,
     load_rules,
 )
 from lab_parser import parse_text
 
 
 st.set_page_config(page_title="IDC Lab Assistant", layout="wide")
+
+# Role 2 Forward design system — manual theme.
+# Streamlit's [theme] in .streamlit/config.toml handles primary palette
+# tokens; this CSS block layers on typography, classification banner,
+# and component refinements per the design system.
+st.markdown(
+    """
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --font-display: 'Roboto Slab', Georgia, 'Times New Roman', serif;
+        --font-body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+        --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+        --r2f-surface-0: #E8DCC4;
+        --r2f-surface-1: #F1E8D4;
+        --r2f-surface-2: #DCCDB1;
+        --r2f-ink-1: #2A2218;
+        --r2f-ink-2: #4A3F30;
+        --r2f-ink-3: #6B5E4A;
+        --r2f-accent: #3F4A33;
+        --r2f-border-1: #C8B295;
+        --r2f-border-2: #A88B6E;
+        --signal-red: #B33A3A;
+        --signal-amber: #C99A2E;
+        --signal-green: #6B7F4F;
+        --signal-blue: #5B7A8B;
+      }
+
+      html, body, [class*="css"], .stApp {
+        font-family: var(--font-body);
+        color: var(--r2f-ink-1);
+      }
+
+      h1, h2, h3, h4, h5,
+      .stMarkdown h1, .stMarkdown h2, .stMarkdown h3, .stMarkdown h4 {
+        font-family: var(--font-display) !important;
+        letter-spacing: -0.01em;
+        color: var(--r2f-ink-1);
+      }
+
+      code, pre, kbd, samp, .stCode { font-family: var(--font-mono) !important; }
+
+      /* Mono numerics — labs and patient identifiers read as mono */
+      .stMetric [data-testid="stMetricValue"],
+      .stDataFrame, [data-testid="stTable"] td {
+        font-family: var(--font-mono);
+        font-feature-settings: 'tnum' on, 'lnum' on;
+      }
+
+      /* Buttons — 4px radius, no shadow at rest */
+      .stButton > button, .stDownloadButton > button {
+        font-family: var(--font-body);
+        font-weight: 600;
+        background: var(--r2f-accent);
+        color: #F1E8D4;
+        border: 1px solid var(--r2f-accent);
+        border-radius: 4px;
+        box-shadow: none;
+        transition: background-color 120ms cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .stButton > button:hover, .stDownloadButton > button:hover {
+        background: #4F5C41;
+        border-color: #4F5C41;
+      }
+      .stButton > button:focus-visible, .stDownloadButton > button:focus-visible {
+        outline: 2px solid var(--signal-amber);
+        outline-offset: 2px;
+      }
+
+      /* Inputs — 2px radius per design system field-element rule */
+      .stTextInput input, .stNumberInput input, .stTextArea textarea,
+      .stSelectbox div[data-baseweb="select"] > div {
+        border-radius: 2px;
+        border-color: var(--r2f-border-1);
+      }
+
+      /* Sidebar surface */
+      [data-testid="stSidebar"] {
+        background: var(--r2f-surface-1);
+        border-right: 1px solid var(--r2f-border-1);
+      }
+
+      /* Alerts — flatten to design-system tints */
+      .stAlert {
+        border-radius: 4px;
+        border-left-width: 3px;
+        box-shadow: none;
+      }
+
+      /* Hairline divider rule */
+      hr { border-top: 1px solid var(--r2f-border-1); border-bottom: none; }
+
+      /* Classification banner */
+      .r2f-classification-banner {
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #3A3025;
+        color: #F1E8D4;
+        font-family: var(--font-body);
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin: -1rem -1rem 1rem -1rem;
+      }
+    </style>
+    <div class="r2f-classification-banner">Unclassified // FOUO</div>
+    """,
+    unsafe_allow_html=True,
+)
 
 st.warning(
     "**De-identified test data only.** This is a clinical decision support tool. "
@@ -125,16 +240,24 @@ with st.sidebar:
 
 # ---------- Input modes ----------
 
-tab_manual, tab_paste = st.tabs(["Manual entry", "Paste lab text"])
+tab_manual, tab_paste, tab_qualitative = st.tabs(
+    ["Manual entry", "Paste lab text", "Serology / qualitative"]
+)
 panel_result: dict | None = None
+
+numeric_lab_ids = sorted(
+    lid for lid, ld in rules["labs"].items() if ld.get("kind", "numeric") == "numeric"
+)
+qualitative_lab_ids = sorted(
+    lid for lid, ld in rules["labs"].items() if ld.get("kind") == "qualitative"
+)
 
 with tab_manual:
     cols = st.columns([2, 1])
     with cols[0]:
-        lab_choices = sorted(rules["labs"].keys())
         lab_id = st.selectbox(
             "Lab",
-            options=lab_choices,
+            options=numeric_lab_ids,
             format_func=lambda lid: rules["labs"][lid]["display_name"],
         )
     with cols[1]:
@@ -157,6 +280,72 @@ with tab_paste:
         else:
             inputs = [(p.lab_id, p.value) for p in parsed]
             panel_result = evaluate_panel(inputs, rules, context)
+
+with tab_qualitative:
+    if not qualitative_lab_ids:
+        st.info("No qualitative labs in rules.json yet.")
+    else:
+        qual_id = st.selectbox(
+            "Serology / qualitative test",
+            options=qualitative_lab_ids,
+            format_func=lambda lid: rules["labs"][lid]["display_name"],
+            key="qual_lab_select",
+        )
+        qual_def = rules["labs"][qual_id]
+
+        if qual_def.get("guideline_anchor"):
+            st.caption(qual_def["guideline_anchor"])
+
+        component_values: dict = {}
+        for comp in qual_def.get("components", []):
+            ctype = comp.get("type", "categorical")
+            cid = comp["id"]
+            label = comp.get("label", cid)
+            if ctype == "numeric":
+                comp_val = st.number_input(
+                    label,
+                    min_value=float(comp.get("min", 0)),
+                    max_value=float(comp.get("max", 100)),
+                    value=0.0,
+                    step=1.0,
+                    format="%.0f",
+                    key=f"qual_{qual_id}_{cid}",
+                )
+                if comp_val > 0:
+                    component_values[cid] = comp_val
+                else:
+                    component_values[cid] = 0  # zero is a valid PPD induration
+            else:
+                opts = comp.get("values", [])
+                # Default to "not done" if available so blank inputs are explicit
+                default_idx = opts.index("not done") if "not done" in opts else 0
+                comp_val = st.selectbox(
+                    label,
+                    options=opts,
+                    index=default_idx,
+                    key=f"qual_{qual_id}_{cid}",
+                )
+                component_values[cid] = comp_val
+
+        if st.button("Evaluate", key="qual_eval"):
+            qual_result = evaluate_qualitative(qual_id, component_values, rules, context)
+            panel_result = {
+                "results": [qual_result],
+                "derived": {
+                    "bun_cr_ratio": None,
+                    "bun_cr_ratio_interpretation": None,
+                    "anion_gap": None,
+                    "egfr": None,
+                    "egfr_formula": "",
+                    "ckd_g_stage": None,
+                    "ckd_a_stage": None,
+                    "ckd_ga_stage": None,
+                    "kdigo_aki_stage": None,
+                    "chronic_ckd_labs_indicated": False,
+                    "missing_for_ckd_staging": [],
+                    "prevent": {"available": False, "missing": [], "out_of_range": []},
+                },
+            }
 
 
 # ---------- Rendering helpers ----------
@@ -259,9 +448,20 @@ def render_result(result: dict, derived: dict) -> None:
 
     severity = result["severity"]
     urgency = URGENCY_BY_SEVERITY.get(severity, "Indeterminate")
+    is_qualitative = result.get("kind") == "qualitative"
 
-    st.markdown(f"### {result['display_name']}: {result['value']} {result['unit']}")
-    st.markdown(f"**Severity:** {severity}  ·  **Urgency:** {urgency}")
+    if is_qualitative:
+        st.markdown(f"### {result['display_name']}")
+        st.markdown(f"**Result:** {result.get('result_label', 'Unknown')}")
+        st.markdown(f"**Severity:** {severity}  ·  **Urgency:** {urgency}")
+        components = result.get("components", {})
+        if components:
+            with st.expander("Component values entered", expanded=False):
+                for k, v in components.items():
+                    st.markdown(f"- **{k}:** {v}")
+    else:
+        st.markdown(f"### {result['display_name']}: {result['value']} {result['unit']}")
+        st.markdown(f"**Severity:** {severity}  ·  **Urgency:** {urgency}")
 
     if result.get("threshold_used_default"):
         st.info(

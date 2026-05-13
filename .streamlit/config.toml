@@ -1,0 +1,12 @@
+# Role 2 Forward design system — manual theme.
+# These tokens are Streamlit's primary theme hooks; the rest of the
+# design system (typography, classification banner, signal colors) is
+# applied via the CSS injected at the top of app.py.
+
+[theme]
+base = "light"
+primaryColor = "#3F4A33"            # accent — olive
+backgroundColor = "#E8DCC4"          # surface-0 — coyote paper
+secondaryBackgroundColor = "#F1E8D4" # surface-1 — paper card
+textColor = "#2A2218"                # ink-1 — warm field-brown
+font = "serif"
